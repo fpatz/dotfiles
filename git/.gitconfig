@@ -1,0 +1,7 @@
+[user]
+	name = Frank Patz-Brockmann
+	email = frank.patz-brockmann@contact-software.com
+[gitlab "code.contact.de/api/v4"]
+	user = frank
+[gitlab "git.contact.de/api/v4"]
+	user = frank

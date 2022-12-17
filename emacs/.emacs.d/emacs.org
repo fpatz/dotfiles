@@ -1,0 +1,2207 @@
+#+title: A Literate Emacs Setup
+#+author: Frank Patz-Brockmann, {{{email}}}
+#+email: fp@contact.de
+#+date: December 2020
+#+language: en
+
+# -- Setting up Org Babel to suppress results from source blocks. This
+# -- is useful to avoid polluting this document with #+RESULT blocks
+# -- when evaluating source blocks with C-c C-c to update Emacs
+#+property: header-args :results silent :tangle yes :noweb no-export
+
+* Literate Programming
+
+  {{{index(literate programming)}}}
+
+  #+begin_dropcap
+  My Emacs setup lives in ~~/.emacs.d/emacs.org~ as a /literate
+  program/ cite:knuth1984literate, that is in an Org Mode
+  cite:orgmode text document with embedded [[https://www.gnu.org/software/emacs/manual/elisp.html][Emacs Lisp]] (and other) code
+  snippets. What you're reading here is produced from that
+  document. The process of extracting code from a literate program is
+  called "tangling".
+  #+end_dropcap
+
+  {{{index(tangling)}}}
+
+  In this document, code that is part of the Emacs initialization is
+  typeset like this:
+
+  #+begin_src emacs-lisp :tangle no
+    (do-some-thing)
+  #+end_src
+
+  Source code that is /not/ part of the initialization but gets
+  tangled into another file or is a noweb reference definition has a
+  distinct background and a little annotation on top of it:
+
+  {{{tag(annotation)}}}
+  #+attr_html: :class tagged
+  #+begin_src emacs-lisp :tangle no
+    (do-some-thing-else)
+  #+end_src
+
+  {{{index(Git repository)}}}
+
+  The Emacs configuration files in ~~/.emacs.d~ are under version
+  control in a Git repository
+  (https://git.contact.de/frank/dotemacs). That repository is meant to
+  provide a reproducible Emacs setup: on a new machine, I can clone
+  the repository into ~~/.emacs.d/~. When Emacs is started for the
+  first time, all required packages will be installed automatically.
+
+* Initialization
+** ~init.el~
+
+   {{{index(init.el@\texttt{init.el})}}}
+   {{{index(initialization file)}}}
+
+   When Emacs is started, it loads a lisp program from an
+   [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html][/initialization file/ ]][[citep:EmacsManual27.1][484]].  That program
+   is meant to initialize Emacs in the way you want it, i.e. load
+   extensions, set custom options etc. I prefer to have all things
+   related to Emacs in one folder, ~~/.emacs.d/~, and use ~init.el~ in
+   that folder as my initialization file (there are other options,
+   though).
+
+   Emacs cannot run the literate program in ~emacs.org~
+   directly. Instead, ~init.el~ is generated from a special section in
+   this file, and the code in ~init.el~ uses an Org Mode function to
+   extract the Lisp code from ~emacs.org~ and execute it.
+
+   {{{index(garbage collection)}}}
+
+   Here is ~init.el~. While running the code from ~emacs.org~, it sets
+   the garbage collection thresholds to higher values to improve
+   startup time a bit.
+
+   # When changing the code in this source block, don't forget to
+   # update ~/.emacs.d/init.el by tangling it (C-c C-v C-t)!
+   {{{tag(init.el)}}}
+   #+begin_src emacs-lisp :tangle init.el
+     ;; This is init.el, and it is generated from emacs.org!
+     (setq gc-cons-threshold most-positive-fixnum
+           gc-cons-percentage 0.9)
+     (org-babel-load-file "~/.emacs.d/emacs.org")
+     (setq gc-cons-threshold 16777216
+           gc-cons-percentage 0.1)
+   #+end_src
+
+** Measuring startup time
+
+   {{{index(startup hook)}}}
+
+   The following code adds a function to ~emacs-startup-hook~ that
+   reports how much time was spent in Emacs initialization. Optimizing
+   startup time seems to be a popular ambition among Emacsers. I don't
+   care much, though, as I tend to run very long-lived Emacs sessions.
+
+   #+begin_src emacs-lisp
+     ;; -*- lexical-binding: t; -*-
+     ;; Use a hook, so the message doesn't get clobbered by
+     ;; other messages.
+     (add-hook
+      'emacs-startup-hook
+      (lambda ()
+        (message
+         "Emacs ready in %s with %d garbage collections."
+         (format "%.2f seconds"
+                 (float-time
+                  (time-subtract after-init-time before-init-time)))
+         gcs-done)))
+   #+end_src
+
+
+** Initialize ~package.el~
+
+   {{{package(package)}}}
+   {{{index(package.el@\texttt{package.el})}}}
+   {{{index(package management)}}}
+   {{{index(MELPA)}}}
+
+   ~package.el~ is the package management system built into
+   Emacs. There are also alternatives, though, e.g. [[https://github.com/quelpa/quelpa][Quelpa]] or
+   [[https://github.com/raxod502/straight.el][straight.el]]. For me, ~package.el~ is all I need. Packages come from
+   package repositories. Vanilla Emacs ships with just
+   ~elpa.gnu.org~. I add the [[https://melpa.org/][MELPA package repository]], that has most
+   interesting Emacs packages with their latest versions. Also add the
+   [[http://orgmode.org/elpa][Org repository]] to get an up-to-date Org distribution.
+
+   #+begin_src emacs-lisp
+     (require 'package)
+     (setq package-archives
+           '(("melpa" . "http://melpa.org/packages/")
+             ("gnu" . "https://elpa.gnu.org/packages/")))
+     (package-initialize)
+   #+end_src
+
+   {{{index(updating packages)}}}
+
+   I do package updates manually.
+
+** Bootstrapping ~use-package~
+
+   {{{package(use-package)}}}
+
+   For installing, loading and configuring Emacs packages, I use John
+   Wiegley's [[https://github.com/jwiegley/use-package][use-package]] macro, which has many convenient features
+   and makes handling packages a lot easier. ~use-package~ is not
+   (yet) built into Emacs, and we obviously cannot use ~use-package~
+   to install itself -- so we have to bootstrap it here using
+   functions from ~package.el~:
+
+   #+begin_src emacs-lisp
+     (unless (package-installed-p 'use-package)
+       (package-refresh-contents)
+       (package-install 'use-package))
+     (require 'use-package)
+     (setq use-package-compute-statistics t)
+   #+end_src
+
+** ~with-system~ for platform-dependent code
+
+   {{{index(with-system@\texttt{with-system} (macro))}}}
+
+   Here is a macro ~with-system~ that can be used to run Lisp code on
+   one particular platform only (copied from [[https://stackoverflow.com/questions/1817257/how-to-determine-operating-system-in-elisp/26137517#26137517][this smart StackOverflow
+   answer]]). Emacs platforms include ~darwin~ (macOS), ~gnu/linux~ and
+   ~windows-nt~. We'll use this macro later on for initializations
+   that are specific to my Windows, macOS or Linux environments.
+
+   #+begin_src emacs-lisp
+     (defmacro with-system (type &rest body)
+       "Evaluate BODY if `system-type' equals TYPE."
+       (declare (indent defun))
+       `(when (eq system-type ',type)
+          ,@body))
+   #+end_src
+
+** The load path
+
+   {{{index(load-path@\texttt{load-path})}}}
+
+   I keep some home-grown lisp files in ~~/.emacs.d/lisp~, so add this
+   path to ~load-path~:
+
+   #+begin_src emacs-lisp
+   (add-to-list 'load-path "~/.emacs.d/lisp")
+   #+end_src
+
+** Custom-less setup
+
+   {{{index(custom-less)}}}
+
+   Emacs has a built-in customization system: built-in and installable
+   packages declare customizable properties, which users can
+   manipulate via ~M-x customize~. The resulting custom settings are
+   persisted into a file in ~~/.emacs.d/~ and automatically reloaded
+   on startup. It is not a good idea to keep the custom file under
+   version control, though, especially for a "roaming" configuration
+   that is used on different machines and platforms.
+
+   Therefore, I use a "custom-less" setup, i.e. all settings done via
+   the ~customize~ user interface are temporary and will never be
+   saved automatically. Permanent custom settings have to be made in
+   /this/ file, ~emacs.org~, programmatically (e.g. in the ~:custom~
+   section of a ~use-package~ form).
+
+   {{{package(cus-edit)}}}
+
+   #+begin_src emacs-lisp
+     (use-package cus-edit
+       :defer t
+       :custom
+       (custom-file null-device "Don't store customizations"))
+   #+end_src
+
+
+* Housekeeping
+
+** Command History
+
+   #+begin_src emacs-lisp
+     (savehist-mode)
+   #+end_src
+
+** Backups
+
+   Here we exert some control over the ways Emacs makes backups of
+   files. We keep all backups in a dedicated dot directory in ~$HOME$~
+   and force a short history.
+
+   #+begin_src emacs-lisp
+     (let ((backup-directory "~/.backups"))
+       (make-directory backup-directory t)
+       (setq backup-directory-alist `(("." . ,backup-directory))))
+     (setq backup-by-copying t
+           delete-old-versions t
+           kept-new-versions 6
+           kept-old-versions 2
+           version-control t
+           vc-make-backup-files t)
+   #+end_src
+
+** Locks
+
+   Inhibit Emacs lock files, as they interfere with software scanning
+   certain directories for new or changed files, e.g. the Hugo
+   development server (this is more a problem of Hugo, though -- it
+   simply crashes on finding an Emacs lock file in a content
+   directory).
+
+   I don't feel particularly well about this one, as it increases the
+   risk of inadvertently overwriting files from another session, on
+   the other hand I very rarely have more than one active Emacs
+   session, and I never work on shared file systems from different
+   machines.
+
+   #+begin_src emacs-lisp
+     (setq create-lockfiles nil)
+   #+end_src
+  
+
+* Settings for macOS
+
+  {{{index(macOS)}}}
+  {{{index(system type!darwin@\texttt{darwin})}}}
+  {{{index(darwin@\texttt{darwin})}}}
+
+  The code blocks in this section go into the place marked with
+  /mac-specific-code/ below via Org Mode's [[https://orgmode.org/manual/Noweb-Reference-Syntax.html][noweb feature]], i.e. inside
+  the ~with-system~ macro, and thus only run on macOS systems.
+
+  #+begin_src emacs-lisp
+    (with-system darwin
+      <<mac-specific-code>>
+    )
+  #+end_src
+
+  {{{index(Spotlight)}}}
+  {{{index(environment)}}}
+  {{{index(environment variables)}}}
+  {{{index(environment variable!PATH@\texttt{PATH})}}}
+  {{{index(environment variable!LANG@\texttt{LANG})}}}
+
+  On macOS, I usually launch Emacs from the graphical desktop via
+  Spotlight. Applications launched that way do not inherit standard
+  environment variables like ~PATH~ from the shell.
+  [[https://github.com/purcell/exec-path-from-shell][~exec-path-from-shell~]] is a neat little package to do just that.
+
+  {{{package(exec-path-from-shell)}}}
+
+  {{{tag(«mac-specific-code»)}}}
+  #+begin_src emacs-lisp :tangle no :noweb-ref mac-specific-code
+    (setq exec-path-from-shell-arguments nil)
+    (use-package exec-path-from-shell :ensure t)
+    (exec-path-from-shell-initialize)
+    (setenv "LANG" "en_US.UTF-8")
+  #+end_src
+
+  {{{index(German keyboard)}}}
+  {{{index(Meta key)}}}
+  {{{index(Super key)}}}
+
+  On my German keyboard I use the left Alt-key as Emacs' Meta. The
+  right Alt-key is passed to macOS to make characters like umlauts
+  accessible. Inside Emacs, I don't use traditional macOS keyboard
+  shortcuts, so the Command-key can be used as Emacs Super. More
+  detail is found [[https://stackoverflow.com/a/33599236/2278030][at this StackOverflow question]].
+
+  Note that all this has no effect when running Emacs inside a
+  Terminal. You'll have to use ESC there for Meta.
+
+  {{{tag(«mac-specific-code»)}}}
+  #+begin_src emacs-lisp :tangle no :noweb-ref mac-specific-code
+    (setq mac-option-modifier 'meta)
+    (setq mac-command-modifier 'super)
+    (setq ns-right-alternate-modifier nil)
+    (setq mac-right-option-modifier nil)
+  #+end_src
+
+  {{{index(Homebrew)}}}
+
+  On macOS, I use [[https://brew.sh][Homebrew]] (a lot). Some Homebrew packages come with
+  Emacs lisp packages, that are installed into the Homebrew directory
+  ~/usr/local~. Each Homebrew package potentially has a subfolder
+  there. The following Lisp code adds all those to ~load-path~, too:
+
+  {{{tag(«mac-specific-code»)}}}
+  #+begin_src emacs-lisp :tangle no :noweb-ref mac-specific-code
+    (let ((homebrew-lisp "/usr/local/share/emacs/site-lisp/"))
+      (if (file-directory-p homebrew-lisp)
+          (let ((default-directory homebrew-lisp))
+            (normal-top-level-add-subdirs-to-load-path))))
+  #+end_src
+
+* User Interface
+
+  {{{index(theme)}}}
+  {{{index(Material, theme)}}}
+  {{{index(Fira Code, font)}}}
+
+  I use a custom theme ~material-frank~, defined in
+  [[file:material-frank-theme.el]] in this directory, and I use [[https://github.com/tonsky/FiraCode][Fira Code]]
+  as my default font in Emacs.
+
+  #+begin_src emacs-lisp
+    (when (window-system)
+      (set-frame-font "Fira Code")
+      (set-face-attribute 'default nil :height 120)
+      (load-theme 'material-frank t))
+  #+end_src
+
+  {{{index(ligatures)}}}
+
+  Enable Fira Code ligatures, if this build of Emacs does support
+  that.
+
+  {{{tag(«mac-specific-code»)}}}
+  #+begin_src emacs-lisp :tangle no :noweb-ref mac-specific-code
+    (if (boundp 'mac-auto-operator-composition-mode)
+        (mac-auto-operator-composition-mode))
+  #+end_src
+
+  {{{index(full screen)}}}
+  {{{index(scrollbars)}}}
+  {{{index(menu bar)}}}
+
+  I prefer a stripped down, no scrollbars, no menu bar, full screen
+  Emacs experience.
+
+  #+begin_src emacs-lisp
+    (when (window-system)
+      (tool-bar-mode 0)
+      (scroll-bar-mode 0)
+      (menu-bar-mode 0)
+      (set-frame-parameter nil 'fullscreen 'fullscreen))
+  #+end_src
+
+  No message in the ~*scratch*~ buffer.
+
+  #+begin_src emacs-lisp
+  (setq initial-scratch-message nil)
+  #+end_src
+
+  This enables shift-select.
+
+  #+begin_src emacs-lisp
+    (setq org-support-shift-select t)
+  #+end_src
+
+  I hate it, when Emacs beeps at me.
+
+  #+begin_src emacs-lisp
+    (setq visible-bell t)
+    (setq ring-bell-function 'ignore)
+  #+end_src
+
+  Do /not/ wrap lines.
+
+  #+begin_src emacs-lisp
+    (setq visual-line-mode t)
+  #+end_src
+
+  Desktop save mode restores open buffers and some settings, but we
+  exclude frame settings, those we did above.
+
+  #+begin_src emacs-lisp
+    (setq desktop-path '("~/.emacs.d"))
+    (setq desktop-restore-frames nil)
+    (desktop-save-mode 1)
+  #+end_src
+
+  Use a (slightly) pimped modeline, using ~powerline~ and
+  ~spaceline~.
+
+  {{{index(mode line)}}}
+  {{{package(powerline)}}}
+  {{{package(spaceline)}}}
+  {{{package(spaceline-config)}}}
+
+  #+begin_src emacs-lisp
+    ;(use-package powerline :ensure t)
+    ;(use-package spaceline :ensure t)
+    ;(require 'spaceline-config)
+    ;(spaceline-emacs-theme)
+  #+end_src
+
+  Use ~ibuffer~.
+
+  #+begin_src emacs-lisp
+    (global-set-key (kbd "C-x C-b") 'ibuffer)
+  #+end_src
+
+
+** Focus Mode
+
+   {{{index(focused writing)}}}
+
+   For focused writing I like to reduce the user interface even
+   further by hiding Emacs's mode line and centering the text of the
+   current buffer.
+
+   {{{package(olivetti)}}}
+   {{{package(hide-mode-line)}}}
+
+   #+begin_src emacs-lisp
+     (use-package olivetti :ensure t)
+     (use-package hide-mode-line :ensure t)
+   #+end_src
+
+   My custom focus mode combines the ~olivetti~ and ~hide-mode-line~
+   packages and is bound to ~S-o~.
+
+   {{{binding(s-o,fp/focus-mode)}}}
+
+   #+begin_src emacs-lisp
+     (defun fp/focus-mode ()
+       "Enter focused writing mode"
+       (interactive)
+       (progn
+         (if (bound-and-true-p olivetti-mode)
+             (progn
+               (olivetti-mode 0)
+               (hide-mode-line-mode 0))
+           (progn
+             (olivetti-mode 1)
+             (hide-mode-line-mode 1)
+             (olivetti-set-width 85)))))
+     (global-set-key (kbd "s-o") 'fp/focus-mode)
+   #+end_src
+
+** A fix for wonky fingers
+
+   When trying to type ~C-x C-s~ (for ~save-buffer~) I sometimes miss
+   the second control key, resulting in ~C-x s~ (for
+   ~save-some-buffers~), which produces an annoying prompt
+   interrupting my flow. To compensate for this, I simply rebind ~C-x
+   s~ to also do ~save-buffer~.
+
+   {{{binding(C-x s,save-buffer)}}}
+   #+begin_src emacs-lisp
+     (global-set-key (kbd "C-x s") 'save-buffer)
+   #+end_src
+
+
+* Ivy
+
+#+begin_src emacs-lisp
+(use-package ivy :ensure t)
+#+end_src
+
+* Org Mode
+
+  {{{package(org-plus-contrib)}}}
+
+  #+begin_src emacs-lisp
+  ;;(use-package org-plus-contrib :ensure t)
+  #+end_src
+
+  Org Mode cite:orgmode is what I use most for taking notes and
+  minutes or writing essays. My ~.org~ files simply go into a Dropbox
+  folder, which makes it easy to synchronize between different
+  computers and my smartphone.
+
+  #+begin_src emacs-lisp
+    (setq org-directory "~/Dropbox/org")
+  #+end_src
+
+  The Org files for filing to-do items and journal entry also are in
+  this folder.
+
+  #+begin_src emacs-lisp
+    (setq org-default-notes-file (concat org-directory "/todo.org"))
+    (setq org-default-journal-file (concat org-directory "/journal.org"))
+  #+end_src
+
+  The Org agenda comes from these files:
+
+  #+begin_src emacs-lisp
+    (setq org-agenda-files
+          (list
+           org-default-journal-file
+           org-default-notes-file
+           (concat org-directory "/inbox.org")))
+  #+end_src
+
+** To-do Keywords
+
+   Org has a configurable life cycle for to-do items. I keep it
+   simple.
+
+   #+begin_src emacs-lisp
+     (setq org-todo-keywords
+           '((sequence "TODO" "|" "DONE" "CANCELLED")))
+   #+end_src
+
+   Insert a time stamp whenever a to-do item is completed.
+
+   #+begin_src emacs-lisp
+     (setq org-log-done 'time)
+   #+end_src
+
+
+** Capture
+
+   {{{binding(C-c c,org-capture)}}}
+
+   With Org, a to-do item or a journal entry (or anything else) can be
+   "captured" from anywhere using the global key binding (~C-c
+   c~). For each item type, a /template/ is defined. I just use to-do
+   items and journal entries.
+
+   {{{index(capture templates)}}}
+
+   Here is my template for to-do items. It generates Prio "A" tasks,
+   automatically adds the current day as a deadline, and creates a
+   link to wherever I came from:
+
+   {{{tag(«todo-template»)}}}
+   #+name: todo-template
+   #+begin_src org :tangle no
+    ,* TODO [#A] %?
+       %:url
+       %a
+   #+end_src
+
+   The journal entry template is much less spectacular:
+
+   {{{tag(«journal-template»)}}}
+   #+name: journal-template
+   #+begin_src emacs-lisp :tangle no
+    ,* %?
+   #+end_src
+
+   Both templates go into ~org-capture-templates~:
+
+   #+begin_src emacs-lisp
+     (setq
+        org-capture-templates
+        '(
+          ("t" "Todo Item"
+           entry (file+headline org-default-notes-file "Tasks")
+           "* TODO %?\n  %T\n\n  %a"
+           :empty-lines 1)
+          ("j" "Journal Entry"
+           entry (file+olp+datetree org-default-journal-file)
+           "* %:description%?\n  %T\n\n  %a\n  %l\n\n  %i"
+           :empty-lines 1)))
+   #+end_src
+
+** Refile
+
+   #+begin_src emacs-lisp
+     (setq fp/snippets-file (concat org-directory "/snippets.org"))
+     (setq fp/links-file (concat org-directory "/links.org"))
+     (setq org-refile-targets
+           `(((,fp/snippets-file) :maxlevel . 1)
+             ((,fp/links-file) :maxlevel . 3)
+             (org-agenda-files :maxlevel . 2)))
+     (setq org-refile-allow-creating-parent-nodes 'confirm)
+     (setq org-refile-use-outline-path 'file)
+   #+end_src
+
+** Deft
+
+   {{{package(deft)}}}
+   {{{binding(<f9>,deft)}}}
+
+   A neat way to create and find notes is Jason Blevin's /Deft/
+   cite:blevinsDeftEmacs2016, which is inspired by *Notational
+   Velocity*: in Deft you simply start typing to find an existing note
+   or create a new one. I keep my Deft notes as ~.org~ files in the
+   Dropbox folder mentioned above. This way Deft can
+   also be used to find other Org files in that folder.
+
+   #+begin_src emacs-lisp
+     (use-package deft
+       :ensure t
+       :bind ("<f9>" . deft)
+       :config
+       (setq
+        deft-extensions '("org" "txt" "rst" "md")
+        deft-default-extension "org"
+        deft-directory org-directory
+        deft-use-filter-string-for-filename t
+        ;; The following convienently makes Deft aware
+        ;; of #+title lines in Org files
+        deft-org-mode-title-prefix t))
+   #+end_src
+
+** Org User Interface
+
+   {{{package(org-bullets)}}}
+
+   ~org-bullets~ creates pretty headlines.
+
+   #+begin_src emacs-lisp
+     (use-package org-bullets
+        :ensure t
+        :init
+        (setq org-bullets-bullet-list
+              '("\u25C9" "\u25CE" "\u26AB" "\u25CB" "\u25BA" "\u25C7"))
+       :config
+       (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+   #+end_src
+
+   {{{index(inline images)}}}
+   {{{binding(C-c C-x C-v, org-­toggle-­inline-­images)}}}
+
+   Org can scale images that are displayed inline (i.e. inside Emacs)
+   automatically. This is especially useful for screenshots from a
+   high-resolution display, that otherwise tend to become huge. 400
+   pixels is good default. Note that inline images can be scaled by
+   pressing =+= and =-= when the cursor is on the image.
+
+   #+begin_src emacs-lisp
+     (setq org-image-actual-width '(400))
+   #+end_src
+
+   The full Org Export user interface consumes a lot of screen space,
+   so we disable it. If necessary, it can be activated after =C-c
+   C-e= by pressing =?=.
+
+   #+begin_src emacs-lisp
+     (setq org-export-dispatch-use-expert-ui t)
+   #+end_src
+
+   Here are the global key bindings for Org functions that should be
+   available anywhere in Emacs. These are the standard key bindings
+   recommended by the Org manual. Org doesn't set them automatically
+   though, so it has to be done here.
+
+   {{{binding(C-c l,org-store-link)}}}
+   {{{binding(C-c a,org-agenda)}}}
+   {{{binding(C-c c,org-capture)}}}
+
+   #+begin_src emacs-lisp
+     (global-set-key (kbd "C-c l") 'org-store-link)
+     (global-set-key (kbd "C-c a") 'org-agenda)
+     (global-set-key (kbd "C-c c") 'org-capture)
+   #+end_src
+
+   {{{binding(C-c C-x C-7,org-­toggle-­pretty-­entities)}}}
+
+   The default for pretty symbols is =C-c C-x \=, which is hard to
+   type on a german keyboard. So, we'll define an additional binding.
+
+   #+begin_src emacs-lisp
+     (define-key org-mode-map (kbd "C-c C-x C-7")
+       'org-toggle-pretty-entities)
+   #+end_src
+
+** Entities
+
+   The following table defines a couple of custom entities that are
+   added to Org's built-in entities. The table data is fed into the
+   Lisp block below, interpreted and stored in the variable
+   ~org-entities-user~. The columns correspond to the seven fields of
+   the variable. Table entries should be inline verbatim, otherwise
+   they'd be interpreted by Org. The verbatim markers are stripped
+   automatically. HTML expansions that are prefixed by =TeX= are
+   automatically embedded in a ~span class="tex"~ element, assuming
+   that [[*A CSS style sheet for HTML][the CSS]] has the relevant styles for \TeX logos. For the
+   ASCII (A), Latin-1 (L) and UTF-8 (U) columns, =-= is translated to
+   the entity name.
+
+   Note that entity completion via ~M-TAB~ doesn't work for custom
+   entities. This is most probably a bug in Org.
+
+   #+begin_responsive
+   #+tblname: custom-entities
+   #+attr_latex:  :font \tiny
+   | Entity     | LaTeX               | Math | HTML                                                           | A | L | U |
+   |------------+---------------------+------+----------------------------------------------------------------+---+---+---|
+   | =TeX=      | =\hologo{TeX}=      | nil  | TeX =T<sub>e</sub>X=                                           | - | - | - |
+   | =LaTeX=    | =\hologo{LaTeX}=    | nil  | TeX =L<sup>a</sup>T<sub>e</sub>X=                              | - | - | - |
+   | =XeLaTeX=  | =\hologo{XeLaTeX}=  | nil  | TeX =X<sub class ="revcap">e</sub>L<sup>a</sup>T<sub>e</sub>X= | - | - | - |
+   | =LuaTeX=   | =\hologo{LuaTeX}=   | nil  | TeX =LuaT<sub>e</sub>X=                                        | - | - | - |
+   | =LuaLaTeX= | =\hologo{LuaLaTeX}= | nil  | TeX =LuaL<sup>a</sup>T<sub>e</sub>X=                           | - | - | - |
+   | =pdfLaTeX= | =\hologo{pdfLaTeX}= | nil  | TeX =pdfL<sup>a</sup>T<sub>e</sub>X=                           | - | - | - |
+   | =BibLaTeX= | =\hologo{BibLaTeX}= | nil  | TeX =BibL<sup>a</sup>T<sub>e</sub>X=                           | - | - | - |
+   #+end_responsive
+
+
+   For the \TeX logos we need ~hologo~ in the \LaTeX export. {{{package(hologo)}}}
+
+   #+begin_src emacs-lisp
+     (add-to-list 'org-latex-packages-alist '("" "hologo"))
+   #+end_src
+
+   The following code interprets a table entry according to the
+   description above and adds the result to ~org-entities-user~.
+
+   {{{tag(«entities-process-entity»)}}}
+   #+name: entities-process-entity
+   #+begin_src emacs-lisp :tangle no
+     (cl-flet
+         ((unverb (text) (string-trim text "=" "="))
+          (fallback-if-dash (text fallback)
+            (if (string= "-" text) fallback text)))
+       (let ((entity-string (unverb (nth 0 entity)))
+             (entity-latex (unverb (nth 1 entity)))
+             (entity-math (unverb (nth 2 entity)))
+             (entity-html (unverb (nth 3 entity)))
+             (entity-ascii (unverb (nth 4 entity)))
+             (entity-latin1 (unverb (nth 5 entity)))
+             (entity-utf8 (unverb (nth 6 entity))))
+         (add-to-list
+          'org-entities-user
+          (list entity-string
+                entity-latex
+                (if (string= "t" entity-math) t nil)
+                (if (string-prefix-p "TeX" entity-html)
+                    (format "<span class=\"tex\">%s</span>"
+                            (unverb (substring entity-html 4)))
+                  (unverb entity-latex))
+                (fallback-if-dash entity-ascii entity-string)
+                (fallback-if-dash entity-latin1 entity-string)
+                (fallback-if-dash entity-utf8 entity-string)))))
+   #+end_src
+
+   The loop goes over the table data that is fed into the Lisp
+   code as a variable named ~custom-entities~.
+
+   #+begin_src emacs-lisp :var custom-entities=custom-entities
+     (cl-loop for entity in custom-entities
+              do
+              <<entities-process-entity>>
+              )
+   #+end_src
+
+
+** Macros
+
+   {{{index(macros)}}}
+
+   Org Mode has /macros/ which are expanded before export. Macros can
+   be defined inside an Org file using the ~#+macro~ syntax:
+
+   : #+macro: macro-name macro-body
+
+   Macro invocations are demarcated with triple braces,
+   e.g. ={{{macro-name}}}=. I prefer to hide the triple braces around
+   Org macros, though.
+
+   #+begin_src emacs-lisp
+     (setq org-hide-macro-markers t)
+   #+end_src
+
+   Global macros can be defined by adding their definitions to an
+   Emacs Lisp variable. Macros defined globally are available to all
+   Org documents. While this is convenient, it has the disadvantage of
+   effectively creating an Org dialect, as documents using those
+   macros are incompatible with Emacs environments that do not define
+   them. The use of global macros should therefore be restricted to
+   personal files, which I promise to do ...
+
+   #+begin_src emacs-lisp
+     (setq org-export-global-macros
+           `(
+             <<org-macros>>
+             ))
+   #+end_src
+
+   The ~index(term)~ macro creates an index entry when exporting to
+   \LaTeX. While there are /two/ other ways of creating index entries,
+   namely the =index:term= links that come with ~org-ref~, and Org's
+   built-in =#+index=, I prefer my custom solution as it allows
+   arbitrary \LaTeX code in its argument -- e.g. enabling formatted
+   index entries -- and avoids dysfunctional links in the HTML output.
+
+   {{{tag(«org-macros»)}}}
+   #+begin_src emacs-lisp :tangle no :noweb-ref org-macros
+     ("index"
+      . ,(concat
+          "(eval (format \""
+          "@@latex: "
+          "\\\\index{%1$s}"
+          "@@\\n"
+          "{{{if-export(html,#+index: %1$s)}}}\\n"
+          "\""
+          " $1))"))
+   #+end_src
+
+   The ~package(name)~ macro creates /two/ index entries for a program
+   package, one under the package name, and another one nested under
+   the "package" entry. For this document, package means an Emacs Lisp
+   package, but the macro can obviously be used for packages of other
+   programming languages as well.
+
+   {{{tag(«org-macros»)}}}
+   #+begin_src emacs-lisp :tangle no :noweb-ref org-macros
+     ("package"
+      . ,(concat
+          "{{{index($1@\\texttt{$1} (package))}}}"
+          "{{{index(package!$1@\\texttt{$1})}}}"))
+   #+end_src
+
+   More specific to Emacs is the ~binding(name,function)~ macro that
+   adds an index entry for a key binding, also specifying the
+   associated Emacs Lisp function.
+
+   {{{tag(«org-macros»)}}}
+   #+begin_src emacs-lisp :tangle no :noweb-ref org-macros
+     ("binding"
+      . ,(concat
+          "{{{index(key binding!$1@\\texttt{$1}\\, "
+          "\\texttt{$2})}}}"))
+   #+end_src
+
+   The macro ~tag(text)~ adds a little adornment to source blocks.
+
+   {{{tag(«org-macros»)}}}
+   #+begin_src emacs-lisp :tangle no :noweb-ref org-macros
+     ("tag"
+      . ,(concat
+          "(eval (format \""
+          "@@latex: "
+          "{\\\\vspace{0.3cm}\\\\hfill"
+          "\\\\footnotesize\\\\texttt{%1$s}$\\\\equiv$}"
+          "\\\\vspace{-0.3cm}"
+          "@@\n"
+          "{{{if-export(html,#+caption: %1$s)}}}\n"
+          "#+attr_latex: :options bgcolor=sourcebg"
+          "\""
+          " $1))"))
+   #+end_src
+
+   Org Mode has a couple of ways to send /raw/ text to exporter
+   backends, but there is no way (I know of, that is) to have
+   conditional Org fragments that are specific for a particular
+   exporter backend. The ~if-export(backend,orgtext)~ macro does just
+   that: when exporting to ~backend~, the text ~orgtext~ will be
+   inserted into the Org document in place of the macro.
+
+   {{{tag(«org-macros»)}}}
+   #+begin_src emacs-lisp :tangle no :noweb-ref org-macros
+     ("if-export"
+      . ,(concat
+          "(eval (if (org-export-derived-backend-p "
+          "org-export-current-backend (intern $1)) $2))"))
+   #+end_src
+
+** Export
+
+   We want to export "smart quotes" with all backends
+   automatically.
+
+   #+begin_src emacs-lisp
+     (setq org-export-with-smart-quotes t)
+   #+end_src
+
+   This can be switched off for a document by using the
+   quote option like so:
+
+   : #+options: ':nil
+
+   All exports go to a subdirectory, to not clutter the directory with the org files.
+
+   #+begin_src emacs-lisp
+     (defvar org-export-output-directory-prefix
+       "export_" "prefix of directory used for org-mode export")
+
+     (defadvice org-export-output-file-name (before org-add-export-dir activate)
+       "Modifies org-export to place exported files in a different directory"
+       (when (not pub-dir)
+         (setq pub-dir (concat org-export-output-directory-prefix (substring extension 1)))
+         (when (not (file-directory-p pub-dir))
+           (make-directory pub-dir))))
+   #+end_src
+
+*** \LaTeX export
+
+    The following enables ~cdlatex~ abbreviations in Org documents.
+
+    {{{package(auctex)}}}
+    {{{package(cdlatex)}}}
+    #+begin_src emacs-lisp
+      (use-package tex
+        :ensure auctex)
+      (use-package cdlatex
+        :ensure t)
+      (add-hook 'org-mode-hook 'turn-on-org-cdlatex)
+    #+end_src
+
+    Org's \LaTeX export is implemented in ~ox-latex~. We also need
+    ~ox-bibtex~.
+
+
+    {{{package(org)}}}
+    {{{package(ox-latex)}}}
+    #+begin_src emacs-lisp
+      (require 'org)
+      (require 'ox-latex)
+    #+end_src
+
+    {{{index(UTF-8)}}}
+    {{{index(XeLaTeX@\hologo{XeLaTeX})}}}
+
+    I always use \XeLaTeX for its capability of using system fonts
+    and reading UTF-8 inputs directly[fn::as of 2020, standard
+    \pdfLaTeX can read UTF-8 also].
+
+     #+begin_src emacs-lisp
+       (setq org-latex-compiler "xelatex")
+     #+end_src
+
+    {{{package(babel)}}}
+
+    While ~polyglossia~ used to be required for \XeLaTeX and \LuaLaTeX,
+    this is no longer the case: ~babel~ handles all \LaTeX variants
+    well. ~babel~ is also required for smart quotes, as it defines
+    \LaTeX macros that Org uses for quotes in a number of languages
+    (e.g. German).
+
+     #+begin_src emacs-lisp
+       (add-to-list 'org-latex-packages-alist
+                    '("AUTO" "babel" t))
+     #+end_src
+
+    Org defaults to ~"germanb"~ for language ~"de"~, but we want
+    ~"ngerman"~.
+
+     #+begin_src emacs-lisp
+       (setcdr (assoc "de" org-latex-babel-language-alist) "ngerman")
+     #+end_src
+
+    To run \LaTeX I use ~latexmk~, which automates running the \LaTeX
+    programs for type-setting, index and bibliography creation etc. as
+    often as required.
+
+     #+begin_src emacs-lisp
+       (setq org-latex-pdf-process
+             '("cd %o && latexmk -shell-escape -pdfxe -8bit %b"))
+     #+end_src
+
+    Because we use \XeLaTeX by default, we also have to fix the
+    settings for \LaTeX previews, as Org's built-in preview doesn't
+    expect that and gets the \LaTeX headers for the generated \TeX
+    file wrong. We therefore define the ~dvisvgm~ preview process from
+    scratch and make it the default:
+
+    #+begin_src emacs-lisp
+      (setq org-preview-latex-default-process 'dvisvgm)
+      (add-to-list
+       'org-preview-latex-process-alist
+       '(dvisvgm :programs
+                 ("latex" "dvisvgm")
+                 :description "dvi > svg"
+                 :message "you need to install the programs: latex and dvisvgm."
+                 :use-xcolor t
+                 :image-input-type "xdv"
+                 :image-output-type "svg"
+                 :image-size-adjust (1.7 . 1.5)
+                 :latex-compiler
+                 ("xelatex -no-pdf -interaction nonstopmode -output-directory %o %f")
+                 :image-converter
+                 ("dvisvgm %f -n -b min -c %S -o %O")))
+    #+end_src
+
+    I use a custom document class ~fpbarticle~ as the default for \LaTeX
+    export from Org. That class defines my personal layout and adds the
+    packages I prefer.
+
+    #+name: latex-preamble-template
+    #+begin_src emacs-lisp :tangle no
+      "\\documentclass[11pt,a4paper]{fpbarticle}
+      [DEFAULT-PACKAGES]
+      [PACKAGES]
+      [EXTRA]
+      \\graphicspath{{../}}
+      "
+    #+end_src
+
+    #+begin_src emacs-lisp
+      (add-to-list
+       'org-latex-classes
+       '("fpbarticle"
+         <<latex-preamble-template>>
+         ("\\section{%s}" . "\\section*{%s}")
+         ("\\subsection{%s}" . "\\subsection*{%s}")
+         ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+         ("\\paragraph{%s}" . "\\paragraph*{%s}")
+         ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+      (setq org-latex-default-class "fpbarticle")
+    #+end_src
+
+
+    #+begin_src emacs-lisp
+      (setq org-latex-listings 'minted)
+      (add-to-list 'org-latex-minted-langs '(org "md"))
+      (setq org-latex-minted-options
+            '(("breaklines" "true") ("breakafter" "/") ("bgcolor" "sourcebg")))
+    #+end_src
+
+    {{{package(ox-extra)}}}
+    #+begin_src emacs-lisp
+      (use-package ob-mermaid :ensure t)
+      (org-babel-do-load-languages
+       'org-babel-load-languages
+       '(
+	 (latex . t)
+	 (mermaid .t)
+	 (plantuml . t)))
+      (let
+	  ((mmdc-binary (locate-file "mmdc" exec-path exec-suffixes 1)))
+	(if mmdc-binary
+	    (setq ob-mermaid-cli-path mmdc-binary)
+	  (message "Mermaid CLI mmdc not found")))
+      (setq org-plantuml-exec-mode 'plantuml)
+      (use-package plantuml-mode :ensure t)
+      (setq plantuml-default-exec-mode 'executable)
+      (setq plantuml-indent-level 2)
+      ;;(require 'ox-extra)
+      ;;(ox-extras-activate '(ignore-headlines))
+    #+end_src
+
+*** HTML
+
+    We export HTML5 by default. For source blocks, we just export CSS
+    selectors and set the style ourselves.
+
+    #+begin_src emacs-lisp
+      (setq org-html-doctype "html5")
+    #+end_src
+
+*** A CSS style sheet for HTML
+
+    This is my attempt to create a custom, responsive CSS style sheet
+    for Org HTML exports on top of the standard CSS generated by
+    Org. Be warned: my CSS fu is seriously limited.
+
+    We put the style into ~org-html-head~, so it gets embedded into
+    exported HTML. The CSS code is defined in the following sections,
+    and goes into the noweb reference =<<org-css>>= that is expanded
+    in Lisp fragment below. To not confuse Lisp, it is important that
+    there must be no double quotes in the CSS.
+
+    #+begin_src emacs-lisp
+      (setq org-html-head "
+      <style type=\"text/css\">
+        <!--/*--><![CDATA[/*><!--*/
+          <<org-css>>
+          <<org-css-responsive-toc>>
+        /*]]>*/-->
+      </style>
+      ")
+      (setq org-html-head-no-toc "
+      <style type=\"text/css\">
+        <!--/*--><![CDATA[/*><!--*/
+          <<org-css>>
+          <<org-css-no-toc>>
+        /*]]>*/-->
+      </style>
+      ")
+    #+end_src
+
+    Here comes a little hack to modify the style sheet in case the
+    table of contents is disabled (via the =toc:nil= option) for a
+    particular document. We install a filter into the Org export
+    machinery, that replaces the custom CSS from ~org-html-head~ with
+    the variant ~org-html-head-no-toc~ (but only if the current
+    =:html-head= is the same as ~org-html-head~).
+
+    #+begin_src emacs-lisp
+      (defun fp/html-filter (text backend info)
+        (when (org-export-derived-backend-p backend 'html)
+          (if (and
+               (not (plist-get info :with-toc))
+               (string= (plist-get info :html-head) org-html-head))
+              (plist-put info :html-head org-html-head-no-toc)))
+        text)
+      (add-to-list 'org-export-filter-parse-tree-functions 'fp/html-filter)
+    #+end_src
+
+    Font imports have to come very early in the style sheet, otherwise
+    some browsers don't load the font. We import Fira Code for source
+    code etc., and a CSS fragment from my S3 bucket for web resources
+    that brings a converted \TeX font for drop caps.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      @import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+      @import url('https://fpb-web-resources.s3.eu-central-1.amazonaws.com/tcaps.css');
+    #+end_src
+
+    The main fonts are /Times New Roman/ for copy and /Fira Code/ for
+    source code. For inline code fragments, Fira's font size is
+    reduced to approximate the x-height of Times. This is not perfect
+    though, as different browsers seem to have different Times
+    variants.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+        body {
+            font-family: 'Times New Roman';
+            font-size: 16pt;
+            background-color: #f8f8f8;
+            hyphens: auto;
+        }
+        pre, code {
+            font-family: 'Fira Code';
+        }
+    #+end_src
+
+    We also enable in-word breaks for inline code to avoid overflows
+    or ragged paragraphs. Lamentably, =overflow-wrap= is not supported
+    by Safari, so we add =word-wrap= as a fallback, although that
+    doesn't work as well.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      code {
+          word-wrap: break-word;
+          overflow-wrap: anywhere;
+          font-size: 85%;
+      }
+    #+end_src
+
+    Same for links, plus undecorate them.
+
+    {{{tag(«org-src»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      a {
+          text-decoration: none;
+          word-wrap: break-word;
+          overflow-wrap: anywhere;
+      }
+    #+end_src
+
+    Here come the headers.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      h1, h2, h3, h4 {
+          font-weight: bold;
+          color: #322d26;
+      }
+      h2 {
+          padding-top: 2em;
+          margin-top: 0;
+      }
+      .subtitle {
+          font-size: 12pt;
+          font-weight: normal;
+      }
+      #preamble p {
+          font-size: 12pt;
+      }
+    #+end_src
+
+    Source blocks have a lighter background and a smaller font
+    size. We also fix the weird appearance of Org's standard
+    =.src::before= tags that appear on hover.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      pre {
+          font-size: 70%;
+      }
+      pre.src {
+          background-color: #fff;
+          border:0;
+          box-shadow: none;
+          border-top: 1px solid #ccc;
+          border-bottom: 1px solid #ccc;
+          margin: 0;
+          padding: 8pt;
+      }
+      pre.src::before {
+          font-size: 80%;
+          font-style: italic;
+          border: 0;
+          bottom: 0;
+          background-color: inherit;
+      }
+    #+end_src
+
+    "Annotated" source blocks get a caption from the ~tag~ macro (in
+    the HTML case). We tweak the caption's appearance, and those
+    blocks also get a different background.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      span.listing-number {
+          display: none;
+      }
+      label.org-src-name {
+          font-size: smaller;
+          font-style: italic;
+      }
+      label.org-src-name + pre.src {
+          background-color: #f8f8f7;
+          box-shadow: 3px 3px 3px #eee;
+          border: 1px solid #ccc;
+      }
+    #+end_src
+
+    We make Org export source code with CSS classes attached and
+    define some simple styles ourselves.
+
+    #+begin_src emacs-lisp
+      (setq org-html-htmlize-output-type 'css)
+    #+end_src
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      .org-comment, .org-comment-delimiter, .org-doc {
+          color: #9c6645;
+          font-style: italic;
+      }
+      .org-string {
+          color: #477c9c;
+      }
+    #+end_src
+
+    Here comes some fashionable typography.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      .section-number-1, .section-number-2, .section-number-3,
+      .section-number-4, .section-number-5 {
+          color: #aaaaaa;
+      }
+      .dropcap p::first-letter {
+          color: #A52A2A;
+          float: left;
+          font-size: 1.9em;
+          margin: 0 .1em 0 0;
+          line-height: 1.2;
+          font-family: 'Typographer Caps';
+      }
+    #+end_src
+
+    Some simple formatting for tables.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      table {
+          font-size: 80%;
+          border-top: 2px solid #888;
+          border-bottom: 2px solid #888;
+      }
+      thead {
+          border-bottom: 1px solid #888;
+      }
+      th {
+          padding-right: 1em;
+      }
+      td {
+          padding-top: 6pt;
+          padding-right: 1em;
+      }
+    #+end_src
+
+    The HTML bibliography is created by =bibtex2html=, which simply
+    produces a table that needs some styling.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      #bibliography table {
+          background-color: #faf8f5;
+      }
+      #bibliography h2 {
+          display: none;
+      }
+      td > blockquote {
+          font-style: italic;
+          margin-top: 4pt;
+          margin-left: 0;
+      }
+      td.bibtexnumber {
+          white-space: nowrap;
+          text-align: left;
+      }
+      .responsive {
+          overflow-x: auto;
+      }
+    #+end_src
+
+    Add brackets around citations.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      .org-ref-reference::before {
+          content: '[';
+      }
+      .org-ref-reference::after {
+          content: ']';
+      }
+    #+end_src
+
+    Here starts the "responsive" part: the default is to hide the
+    table of contents and the postamble, and to add a little margin
+    around all of the body. This looks pretty okay on smaller
+    displays.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      div#table-of-contents {
+          display: none;
+      }
+      div#table-of-contents h2 {
+          display: none;
+      }
+      #postamble {
+          display: none;
+      }
+    #+end_src
+
+    ... unless there is enough space to display the table of contents
+    and the title in a sidebar on the left.
+
+    {{{tag(«org-css-reponsive-toc»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css-responsive-toc
+      @media only screen and (max-width: 799px) {
+          body {
+              margin: 5%;
+          }
+      }
+      @media only screen and (min-width: 800px) {
+          #content {
+              margin-left: 200px;
+              padding-left: 4em;
+              display: block;
+              overflow: auto;
+              max-width: 48em;
+          }
+          div#table-of-contents {
+              position: fixed;
+              top: 75px;
+              left: 0;
+              bottom: 0;
+              width: 200px;
+              padding: 0em 1em 1em 1em;
+              font-size: 75%;
+              overflow-y: scroll;
+              display: block;
+          }
+          #postamble {
+              display: inline-block;
+              margin-left: 200px;
+              padding-left: 4em;
+          }
+          .title {
+              text-align: left;
+              position: fixed;
+              font-size: 12pt;
+              top: 0;
+              left: 0;
+              width: 200px;
+              margin: 0;
+              padding: 1em;
+              border-bottom: 2px solid #a52a2a;
+          }
+      }
+    #+end_src
+
+    This is the variant when no ToC is selected.
+
+    {{{tag(«org-css-no-toc»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css-no-toc
+      body {
+          margin: 5%;
+      }
+      #content {
+          display: block;
+          overflow: auto;
+          max-width: 48em;
+      }
+    #+end_src
+
+    Style the table of contents by un-prefixing list items, reducing
+    the font size and adding a little space above each top-level
+    section.
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      #text-table-of-contents ul {
+          list-style-type: none;
+          padding-inline-start: 1em;
+          margin-block-start: 0;
+      }
+      #text-table-of-contents a {
+          color: black;
+      }
+      #text-table-of-contents > ul > li {
+          padding-top: .5em;
+      }
+    #+end_src
+
+    Some special CSS to typeset \TeX logos, which are defined in [[*Entities][Entities]].
+
+    {{{tag(«org-css»)}}}
+    #+begin_src css :tangle no :noweb-ref org-css
+      .tex {
+          font-size: 1em;
+      }
+      .tex sub {
+          text-transform: uppercase;
+          font-size: 0.95em;
+          vertical-align: -0.5ex;
+          margin-left: -0.1667em;
+          margin-right: -0.125em;
+      }
+      .tex sup {
+          text-transform: uppercase;
+          font-size: 0.75em;
+          vertical-align: 0.25em;
+          margin-left: -0.36em;
+          margin-right: -0.15em;
+      }
+      .revcap {
+          display: inline-block;
+          text-transform: uppercase;
+          -webkit-transform: rotateY(180deg);
+          -moz-transform: rotateY(180deg);
+          -ms-transform: rotateY(180deg);
+          transform: rotateY(180deg);
+      }
+   #+end_src
+
+
+** Org Ref
+
+   {{{package(org-ref)}}}
+   {{{package(bibtex)}}}
+   {{{package(ox-bibtex)}}}
+
+   Set up John Kitchin's ~org-ref~ (FIXME: documentation needs to be
+   completed). It is important to require ~ox-bibtex~ /before/
+   ~org-ref~, because both try to define the =cite:= link type, and we
+   want the =:follow= function from ~org-ref~.
+
+   #+begin_src emacs-lisp
+     (require 'bibtex)
+     ;;(require 'ox-bibtex)
+     ;; Remove the "cite" entry added by ox-bibtex, otherwise we'll get a
+     ;; warning that it is redefined by org-ref
+     (setq org-link-parameters
+           (assoc-delete-all "cite" org-link-parameters))
+     (bibtex-set-dialect 'biblatex)
+     (add-to-list
+      'bibtex-biblatex-entry-alist
+      '("software" "Software"
+        (("title") ("author") ("date") ("url") ("abstract"))
+        nil
+        "keywords"))
+     (setq
+      my-bibliography-dir (file-name-as-directory "~/References")
+      my-bib-file (concat my-bibliography-dir "cslab.bib"))
+
+     (use-package org-ref
+       :ensure t
+       :config
+       (setq
+        reftex-default-bibliography (list my-bib-file)
+        org-ref-default-bibliography (list my-bib-file)
+        bibtex-completion-bibliography (list my-bib-file)
+        org-ref-bibliography-notes (concat my-bibliography-dir "notes.org")
+        bibtex-completion-notes-path org-ref-bibliography-notes
+        bibtex-completion-pdf-field "file"
+        ;; open pdf with system pdf viewer (works on mac)
+        bibtex-completion-pdf-open-function
+        (lambda (fpath)
+          (progn
+            (message fpath)
+            (start-process "open" "*open*" "open" fpath)))))
+   #+end_src
+
+   As we manage references by Zotero, which does not store PDFs in the
+   format required by ~org-ref~, we fall back to the
+   ~bibtex-completion~ for finding and opening PDFs based on the
+   ~file~ field.
+
+    #+begin_src emacs-lisp
+      (defun my/org-ref-open-pdf-at-point ()
+        "Open the pdf for bibtex key under point if it exists."
+        (interactive)
+        (org-open-file
+         (car (bibtex-completion-find-pdf
+               (car (org-ref-get-bibtex-key-and-file))))))
+      (setq org-ref-open-pdf-function 'my/org-ref-open-pdf-at-point)
+   #+end_src
+
+** Org Babel
+
+   #+begin_src emacs-lisp
+       (org-babel-do-load-languages
+        'org-babel-load-languages
+        '((shell . t)
+          (python . t)
+          (C . t)))
+       (setq org-confirm-babel-evaluate nil)
+   #+end_src
+
+** Roam
+
+   # {{{package(org-roam)}}}
+   # {{{package(org-roam-bibtex)}}}
+   # {{{binding(C-c n l,org-roam)}}}
+   # {{{binding(C-c n f,org-roam-find-file)}}}
+   # {{{binding(C-c n b,org-roam-switch...)}}}
+   # {{{binding(C-c n g,org-roam-show-graph)}}}
+   # {{{binding(C-c n i,org-roam-insert)}}}
+   # {{{binding(C-c n a,orb-note-actions)}}}
+
+   # #+begin_src emacs-lisp
+   #   (use-package org-roam
+   #     :ensure t
+   #     :hook
+   #     (after-init . org-roam-mode)
+   #     :custom
+   #     (org-roam-directory org-directory)
+   #     :bind (:map org-roam-mode-map
+   #                 (("C-c n l" . org-roam)
+   #                  ("C-c n f" . org-roam-find-file)
+   #                  ("C-c n b" . org-roam-switch-to-buffer)
+   #                  ("C-c n g" . org-roam-show-graph))
+   #                 :map org-mode-map
+   #                 (("C-c n i" . org-roam-insert))))
+
+   #   (use-package org-roam-bibtex
+   #     :ensure t
+   #     :hook (org-roam-mode . org-roam-bibtex-mode)
+   #     :bind (:map org-mode-map
+   #            (("C-c n a" . orb-note-actions))))
+   # #+end_src
+
+** Homegrown Org Presentations
+
+   {{{binding(C-+,text-scale-increase)}}}
+   {{{binding(C--,text-scale-decrease)}}}
+
+   #+begin_src emacs-lisp
+     (load "org-present.el")
+     (global-set-key (kbd "C-+") 'text-scale-increase)
+     (global-set-key (kbd "C--") 'text-scale-decrease)
+   #+end_src
+
+** Mac: Open "message" links
+
+   #+begin_src emacs-lisp
+     (org-link-set-parameters
+      "message"
+      :follow
+      (lambda (url)
+        (let
+            ((goto-url (format "message:%s" url)))
+          (message "%s" goto-url)
+          (browse-url goto-url))))
+   #+end_src
+
+** Search with ~org-fts~
+
+   An experimental search solution from https://github.com/zot/microfts
+
+   #+begin_src emacs-lisp
+     (require 'ivy-org-fts)
+     (setq org-fts-input-args '())
+     (define-prefix-command 'ctrl-c-o-map)
+     (global-set-key (kbd "C-c o") 'ctrl-c-o-map)
+     (global-set-key (kbd "C-c o s") 'ivy-org-fts-search)
+     (global-set-key (kbd "C-c o f") 'ivy-org-fts-find-org-file)
+   #+end_src
+
+
+* Other Markup formats
+
+  {{{package(yaml-mode)}}}
+
+  #+begin_src emacs-lisp
+    (use-package yaml-mode
+      :ensure t)
+  #+end_src
+
+  PDF tools.
+
+  #+begin_src emacs-lisp
+    (use-package pdf-tools
+      :ensure t
+      :magic ("%PDF" . pdf-view-mode)
+      :config
+      (pdf-tools-install :no-query)
+      (setq pdf-view-use-scaling t))
+  #+end_src
+
+
+* Spell checking
+
+  Use ~aspell~, ~enchant~ or ~ispell~ as a spell checker, whichever is
+  available on this machine.
+
+  #+begin_src emacs-lisp
+    (cond ((executable-find "enchant-2")
+           (setq-default ispell-program-name "enchant-2"))
+          ((executable-find "aspell")
+           (setq-default ispell-program-name "aspell"))
+          (t
+           (message "Neither enchant nor aspell could be found, falling back to ispell")))
+    ;; Make 'ispell-dictionary' safe for local strings, to enable
+    ;; setting the spell check language locally in a file
+    (put 'ispell-dictionary 'safe-local-variable 'stringp)
+    (dolist (hook '(text-mode-hook))
+      (add-hook hook (lambda () (flyspell-mode 1))))
+    (dolist (hook '(change-log-mode-hook log-edit-mode-hook))
+      (add-hook hook (lambda () (flyspell-mode -1))))
+  #+end_src
+
+  {{{package(guess-language)}}}
+  #+begin_src emacs-lisp
+    (use-package guess-language
+      :ensure t)
+  #+end_src
+
+* Programming
+
+ripgrep
+
+{{{package(rg)}}}
+
+#+begin_src emacs-lisp
+(use-package rg :ensure t)
+#+end_src
+
+
+
+** Code
+*** Projectile
+
+    {{{package(projectile)}}}
+
+  #+begin_src emacs-lisp
+    (use-package projectile :ensure t)
+    (projectile-global-mode)
+    (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+  #+end_src
+
+
+*** Subversion
+
+    {{{package(dsvn)}}}
+
+ #+begin_src emacs-lisp
+ (use-package dsvn :ensure t)
+ #+end_src
+
+** Compilation Buffer
+
+   Avoid lagging compilation buffer by removing the particularly
+   expensive maven regular expression.
+
+   {{{package(compile)}}}
+
+ #+begin_src emacs-lisp
+   (setq compilation-scroll-output t)
+
+
+   (defun colorize-compilation-buffer ()
+     (toggle-read-only)
+     (ansi-color-apply-on-region compilation-filter-start (point))
+     (toggle-read-only))
+   (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+   (require 'compile)
+   (setq compilation-error-regexp-alist
+         (delete 'maven compilation-error-regexp-alist))
+   (add-to-list
+    'compilation-error-regexp-alist-alist
+    '(bandit "^ *Location: \\([^:]+\\):\\([0-9]+\\):\\([0-9]+\\)" 1 2 3))
+   (add-to-list 'compilation-error-regexp-alist 'bandit)
+ #+end_src
+
+
+** Python
+
+   For editing Python code in Org source blocks, we don't want TABs.
+
+   #+begin_src emacs-lisp
+   (add-hook 'org-mode-hook (lambda () (setq indent-tabs-mode nil)))
+   #+end_src
+
+   {{{package(blacken)}}}
+   #+begin_src emacs-lisp
+     (use-package blacken
+       :ensure t
+       :custom
+       ;; set this to nil to let black pick up whatever the project
+       ;; has configured
+       (blacken-line-length nil))
+     (global-set-key (kbd "C-c b") 'blacken-buffer)
+   #+end_src
+
+   {{{package(pyvenv)}}}
+
+#+begin_src emacs-lisp
+  (use-package pyvenv
+    :ensure t)
+#+end_src
+
+   {{{package(elpy)}}}
+#+begin_src emacs-lisp
+  (use-package elpy
+    :ensure t
+    :custom
+    (elpy-formatter "black")
+    :init
+    (elpy-enable))
+#+end_src
+
+*** Jupyter
+
+    {{{index(Jupyter)}}}
+    {{{package(ein)}}}
+
+    #+begin_src emacs-lisp
+      (use-package ein
+        :ensure t
+        :custom
+        (ein:output-area-inlined-images t)
+        :custom-face
+        (ein:cell-output-area  ((t (:background "light grey")))))
+    #+end_src
+
+** Additional Keyboard Shortcuts
+
+   {{{package(magit)}}}
+   {{{package(forge)}}}
+ #+begin_src emacs-lisp
+   (use-package magit
+     :ensure t
+     :bind (("C-c s" . magit-status)))
+   (use-package forge :after magit
+     :ensure t
+     :config
+     (push '("de-git01.contact.de" "de-git01.contact.de/api/v4"
+             "de-git01.contact.de" forge-gitlab-repository)
+           forge-alist))
+ #+end_src
+
+ {{{binding(C-c m,compile)}}}
+ {{{binding(C-c n,next-error)}}}
+ {{{binding(C-c s,magit-status)}}}
+
+ #+begin_src emacs-lisp
+ (global-set-key (kbd "C-c m") 'compile)
+ (global-set-key (kbd "C-c n") 'next-error)
+ #+end_src
+** Javascript
+
+   {{{package(rjsx-mode)}}}
+#+begin_src emacs-lisp
+  (use-package rjsx-mode
+    :ensure t)
+#+end_src
+
+** Go
+
+   #+begin_src emacs-lisp
+     (use-package go-mode
+       :ensure t)
+   #+end_src
+
+* Mail
+
+I (sometimes) read email inside Emacs using ~mu4e~. IMAP accounts are
+completely replicated to local storage (~~/Maildir~) by ~isync~, and
+then indexed by ~mu~.
+
+** Installing mu
+
+~mu~ is available from Homebrew. ~mu~ comes with the Emacs package
+~mu4e~.
+
+#+begin_src bash :tangle no
+$ brew install mu
+#+end_src
+
+** Installation and configuration of ~mbsync~
+
+The ~mbsync~ command comes with the ~isync~ package from Homebrew.
+
+#+begin_src sh :tangle no
+$ brew install isync
+#+end_src
+
+*** Safe passwords
+
+To not expose clear-text passwords in ~.mbsyncrc~ we access mail
+account passwords from the OS X keyring. For this, the Python package
+~keyring~ is used (installed with ~pipx~).
+
+*** ~.mbsyncrc~
+
+This is the configuration for the "mbsync" command
+(http://isync.sourceforge.net), that synchronizes IMAP accounts with
+local Maildir folders, on which I run mu4e as a MUA.
+
+#+begin_src sh
+# -*- sh -*- (seems ok for this kind of file)
+
+# AUTOMATICALLY GENERATED FROM ~/.emacs.d/emacs.org
+
+# We DO NOT store passwords in these files, but instead use a tiny
+# Python script to access OS X's key chain (see PassCmd below).
+
+IMAPAccount work
+# IMAP access to Exchange
+Host outlook.office365.com
+User frank@contact.de
+PassCmd "keyring get email frank@work"
+SSLType IMAPS
+SSLVersion TLSv1.2
+AuthMechs PLAIN
+# Increase timeout to avoid o365 IMAP hiccups
+Timeout 120
+PipelineDepth 1
+
+IMAPStore work-remote
+Account work
+
+MaildirStore work-local
+Path ~/.mail/work/
+Inbox ~/.mail/work/Inbox
+SubFolders Legacy
+
+Channel work
+Master :work-remote:
+Slave :work-local:
+Patterns * !Andere* !Aufgaben !Journal !Kalender* !Kontakte !Notizen !RSS-Feeds !Synchronisierungsprobleme* !Vorgeschla*
+Create Both
+Expunge Both
+Sync All
+
+IMAPAccount gmail
+# Address to connect to
+Host imap.gmail.com
+User frank.patz@gmail.com
+PassCmd "keyring get email frank@gmail"
+AuthMechs LOGIN
+# Use SSL
+SSLType IMAPS
+# The following line should work. If get certificate errors, uncomment
+# the two following lines and read the "Troubleshooting" section.
+#CertificateFile /etc/ssl/certs/ca-certificates.crt
+#CertificateFile ~/.cert/imap.gmail.com.pem
+#CertificateFile ~/.cert/Equifax_Secure_CA.pem
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+# The trailing "/" is important
+Path ~/.mail/gmail/
+Inbox ~/.mail/gmail/Inbox
+SubFolders Legacy
+
+Channel gmail
+Master :gmail-remote:
+Slave :gmail-local:
+# Exclude everything under the internal [Gmail] folder, except the interesting folders
+Patterns * ![Gmail]* "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail"
+# Or include everything
+#Patterns *
+# Automatically create missing mailboxes, both locally and on the server
+Create Both
+# Save the synchronization state files in the relevant directory
+SyncState *
+
+#+end_src
+
+
+** ~mu4e~ configuration
+
+We require ~mu4e~ and define a global key to access it's main screen:
+
+{{{package(mu4e)}}}
+ {{{binding(s-m,mu4e)}}}
+
+#+begin_src emacs-lisp
+(when (require 'mu4e nil 'noerror)
+  (require 'mu4e)
+  (global-set-key (kbd "s-m") 'mu4e))
+#+end_src
+
+*** Basic Configuration
+
+First, we'll set a couple of variables regarding the appearance of
+~mu4e~, directories, external commands to be used etc.
+
+- brew install w3m
+
+#+begin_src emacs-lisp
+(setq
+ ;; ** General, UI etc.
+ mu4e-use-fancy-chars t
+ ;; attempt to show images when viewing messages
+ mu4e-view-show-images t
+ mu4e-headers-include-related nil
+ mu4e-confirm-quit nil
+ mu4e-attachment-dir "~/Desktop"
+ mu4e-headers-date-format "%Y-%m-%d"
+ ;;mu4e-html2text-command "textutil -stdin -format html -convert txt -stdout"
+ mu4e-html2text-command "/usr/local/bin/w3m -T text/html"
+ ;;mu4e-html2text-command "/usr/local/bin/html2text -utf8 -nobs -width 72"
+ mu4e-change-filenames-when-moving t
+ mu4e-headers-fields (quote
+                      ((:human-date . 12)
+                       (:flags . 6)
+                       (:from-or-to . 22)
+                       (:subject)))
+ ;;mu4e-mu-binary     "/usr/local/bin/mu"
+ ;;mu4e-maildir       "~/.mail"   ;; top-level Maildir
+ mu4e-compose-complete-only-after "2014-01-01"
+ ;; mu4e-compose-complete-only-personal t
+ mu4e-get-mail-command
+ "mbsync work:Inbox work:Archive work:Sent gmail:Inbox"
+ message-send-mail-function   'smtpmail-send-it
+ mu4e-context-policy 'pick-first
+ mu4e-compose-context-policy 'ask
+ mu4e-maildir-shortcuts '(("/work/Archive" . ?a)
+                          ("/work/Inbox"   . ?i)
+                          ("/work/Sent"    . ?s)
+                          ("/work/Drafts"  . ?d)
+                          ("/gmail/Inbox" . ?g))
+
+ ;; a  list of user's e-mail addresses
+ mu4e-user-mail-address-list  '("fp@contact.de"
+                                "frank.patz-brockmann@contact-software.com"
+                                "frank@contact.de"
+                                "frank.patz@contact.de"
+                                "frank.patz@gmail.com"
+                                "frank.patz@googlemail.com")
+ )
+#+end_src
+
+#+begin_src sh :tangle no
+mu init \
+     --my-address=fp@contact.de \
+     --my-address=frank.patz-brockmann@contact-software.com\
+     --my-address=frank@contact.de\
+     --my-address=frank.patz@contact.de\
+     --my-address=frank.patz@gmail.com\
+     --my-address=frank.patz@googlemail.com
+#+end_src
+
+*** Contexts
+
+We use ~mu4e~ for both, work and private accounts. Each account is
+represented by a different *context*, that defines separate mail
+directories, email addresses, SMTP servers and so on. See the
+documentation for ~mu4e~ contexts at
+http://www.djcbsoftware.nl/code/mu/mu4e/Contexts.html.
+
+#+begin_src emacs-lisp
+(setq epa-pinentry-mode 'loopback)
+  (when (require 'mu4e nil 'noerror)
+    (setq
+     mu4e-contexts
+     `( ,(make-mu4e-context
+          :name "work"
+          :enter-func (lambda () (mu4e-message "fp@contact.de"))
+          :match-func (lambda (msg)
+                        (when msg
+                          (mu4e-message-contact-field-matches
+                           msg
+                           '(:to :from :cc :bcc) "@contact")))
+          :vars '(
+                  (user-mail-address . "fp@contact.de")
+                  (mu4e-reply-to-address . "fp@contact.de")
+                  (mu4e-sent-folder . "/work/Sent")
+                  (mu4e-drafts-folder . "/work/Drafts")
+                  (mu4e-trash-folder . "/work/Gel&APY-schte Elemente")
+                  (mu4e-refile-folder . "/work/Archive")
+                  (user-full-name . "Frank Patz-Brockmann")
+                  (mu4e-compose-signature .
+                                          "Frank Patz-Brockmann\nhttp://www.contact-software.com/\n")
+                  (smtpmail-smtp-server . "smtp.office365.com")
+                  (smtpmail-default-smtp-server . "smtp.office365.com")
+                  (smtpmail-queue-mail . nil)
+                  (smtpmail-queue-dir . "~/.mail/work/Queue")))
+        ,(make-mu4e-context
+          :name "gmail"
+          :enter-func (lambda () (mu4e-message "frank.patz@gmail.com"))
+          :match-func (lambda (msg)
+                        (when msg
+                          (mu4e-message-contact-field-matches
+                           msg
+                           '(:to :from :cc :bcc) "@g")))
+          :vars '(
+                  (user-mail-address . "frank.patz@gmail.com")
+                  (user-full-name . "Frank Patz-Brockmann")
+                  (mu4e-sent-folder . "/gmail/[Google Mail]/.Gesendet")
+                  (mu4e-drafts-folder . "/gmail/[Google Mail]/.Entw&APw-rfe")
+                  (mu4e-trash-folder . "/gmail/[Google Mail]/.Papierkorb")
+                  (mu4e-refile-folder . "/gmail/[Google Mail]/.Alle Nachrichten")
+                  (mu4d-compose-signature . "Frank Patz-Brockmann\nfrank.patz@gmail.com\n")
+                  (smtpmail-smtp-server . "smtp.gmail.com")
+                  (smtpmail-default-smtp-server . "smtp.gmail.com")
+                  (smtpmail-smtp-service . 587)
+                  ;; (smtpmail-local-domain . "gmail.com")
+                  ;; (smtpmail-queue-mail . nil)
+                  ;; (smtpmail-starttls-credentials . '(("smtp.gmail.com" "587" nil nil)))
+                  ;; (smtpmail-auth-credentials . (expand-file-name "~/.authinfo"))
+                  ;; (starttls-extra-arguments . nil)
+                  ;; (starttls-gnutls-program . "/usr/local/bin/gnutls-cli")
+                  ;; (starttls-use-gnutls . t)
+                  )))
+     ))
+#+end_src
+
+*** Other Settings
+
+The following adds viewing in a browser for HTML messages, and defines
+a bookmark for a *unified* inbox, showing messages from all accounts.
+
+{{{package(org-mu4e)}}}
+
+#+begin_src emacs-lisp
+(when (require 'mu4e nil 'noerror)
+  (add-to-list 'mu4e-view-actions
+               '("browser view" . mu4e-action-view-in-browser) t)
+  (add-to-list 'mu4e-bookmarks
+               '("m:/gmail/Inbox OR m:/work/INBOX"       "Unified Inbox"     ?i))
+  ;;store org-mode links to messages
+  (require 'org-mu4e)
+  ;;store link to message if in header view, not to header query
+  (setq org-mu4e-link-query-in-headers-mode nil))
+#+end_src
+
+#+begin_src emacs-lisp
+(when (require 'mu4e nil 'noerror)
+  (setq mail-user-agent 'mu4e-user-agent)
+  (setq org-mu4e-convert-to-html t))
+#+end_src
+
+Finally, this removes the confirmation for executing marks in header
+mode
+
+#+begin_src emacs-lisp
+(when (require 'mu4e nil 'noerror)
+  (defun my-execute-mu4e-marks ()
+    "Execute marks in header mode without asking for confirmation"
+    (interactive)
+    (mu4e-mark-execute-all t))
+  (eval-after-load 'mu4e-headers
+    '(define-key mu4e-headers-mode-map "x" 'my-execute-mu4e-marks)))
+#+end_src
+
+
+
+* Postscriptum
+
+#+begin_src emacs-lisp
+  (require 'org-protocol)
+  (use-package org-capture-pop-frame
+    :ensure t
+    :config
+    (setq
+     ocpf-frame-parameters
+       '((name . "org-capture-pop-frame")
+         (width . 121)
+         (height . 30)
+         (tool-bar-lines . 0)
+         (menu-bar-lines . 0))))
+
+  (server-start)
+  (add-to-list 'auto-mode-alist '("\\.jsx$" . web-mode))
+  (defadvice web-mode-highlight-part (around tweak-jsx activate)
+    (if (equal web-mode-content-type "jsx")
+        (let ((web-mode-enable-part-face nil))
+          ad-do-it)
+      ad-do-it))
+
+  (setq dired-use-ls-dired nil)
+#+end_src
+
+
+* etc.
+
+The "rg" thing below is a workaround for a shortcoming in rg.el (AFAIUI).
+
+#+begin_src emacs-lisp
+(setq-default indent-tabs-mode nil)
+(setq rg-executable-path "rg")
+#+end_src
+
+** vterm
+
+{{{package(vterm)}}}
+
+#+begin_src emacs-lisp
+  (use-package vterm
+    :ensure t
+    :custom
+    (vterm-shell (concat (locate-file "bash" exec-path exec-suffixes 1) " -i")))
+#+end_src
+
+* Appendices                                                         :ignore:
+
+#+latex: \printbibliography[heading=bibintoc]
+#+latex: \printindex
+
+{{{if-export(html,* References)}}}
+{{{if-export(html,#+bibliography: /Users/frank/References/cslab-bibtex.bib alpha limit:t option:-nokeywords)}}}
+
+* To-dos, Issues & Ideas                                            :noexport:
+
+*** TODO Add dockerfile-mode
+*** TODO Make xdg-open work from inside Emacs
+
+    https://askubuntu.com/questions/646631/emacs-doesnot-work-with-xdg-open
+
+*** TODO Add ox-pandoc
+*** TODO Add binding for activating org-ref-helm-insert-cite-link to rst-mode
+*** TODO Mention view-mode
+*** TODO Explore one of the git-gutter modes
+*** TODO Leave config files in top-level .git
+    For Management with magit re-set GIT_DIR
+*** TODO rainbow-mode!
+*** TODO Checkers
+    - writegood-mode
+    - language-tool, Emacs langtool
+*** TODO sphinx-mode (!)
+*** TODO Add org-toc and window-split-toggle
+
+    org-toc displays an outline of the Org document currently open. I
+    think I'd like a shortcut for that. Unfortunately, the =*org-toc*=
+    buffer comes up in new, /horizontally/ split windows, which I find
+    annoying. For that, [[https://emacs.stackexchange.com/questions/5371/how-to-change-emacs-windows-from-vertical-split-to-horizontal-split][this code from an answer from
+    emacs.stackexchange]] may help:
+
+    #+begin_src emacs-lisp :tangle no
+      (defun window-split-toggle ()
+        "Toggle between horizontal and vertical split with two windows."
+        (interactive)
+        (if (> (length (window-list)) 2)
+            (error "Can't toggle with more than 2 windows!")
+          (let ((func (if (window-full-height-p)
+                          #'split-window-vertically
+                        #'split-window-horizontally)))
+            (delete-other-windows)
+            (funcall func)
+            (save-selected-window
+              (other-window 1)
+              (switch-to-buffer (other-buffer))))))
+    #+end_src
+
+    +Maybe+ even better: https://www.emacswiki.org/emacs/TransposeFrame
+
+    Possible key bindings:
+
+    | S-Arrow Down/up    | transpose-frame |
+    | S-Arrow Left/right | rotate-frame    |
+    |                    |                 |
+*** Better key binding for deft: s-d?
+*** Consider ol-man (man: links)
+*** Option for highlighting CSS in HTML output
+
+    #+begin_example
+    span.org-css-selector {
+      font-weight: bold;
+      color: darkmagenta;
+    }
+    span.org-css-property {
+      color: darkred;
+    }
+    #+end_example
