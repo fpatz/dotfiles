@@ -4,7 +4,7 @@ set -euo pipefail
 
 PYENV_LOCATION=~/.pyenv
 PYENV_REPO=https://github.com/pyenv/pyenv.git
-PYENV_GLOBAL=3.11.1
+PYENV_PYTHON_GLOBAL=3.11.1
 DOTFILES_LOCATION=~/.dotfiles
 DOTFILES_REPO=https://github.com/fpatz/dotfiles.git
 
@@ -27,9 +27,9 @@ setup_pyenv () {
     # add .pyenv to PATH
     PATH="$HOME/.pyenv/bin:$PATH"
     eval "$(pyenv init -)"
-    echo "==> Python $PYENV_GLOBAL"
-    pyenv install -s $PYENV_GLOBAL
-    pyenv global $PYENV_GLOBAL
+    echo "==> Python $PYENV_PYTHON_GLOBAL"
+    pyenv install -s $PYENV_PYTHON_GLOBAL
+    pyenv global $PYENV_PYTHON_GLOBAL
 }
 
 
