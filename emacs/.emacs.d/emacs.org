@@ -143,11 +143,11 @@
    [[http://orgmode.org/elpa][Org repository]] to get an up-to-date Org distribution.
 
    #+begin_src emacs-lisp
-     (require 'package)
-     (setq package-archives
-           '(("melpa" . "http://melpa.org/packages/")
-             ("gnu" . "https://elpa.gnu.org/packages/")))
-     (package-initialize)
+     ;; (require 'package)
+     ;; (setq package-archives
+     ;;       '(("melpa" . "http://melpa.org/packages/")
+     ;;         ("gnu" . "https://elpa.gnu.org/packages/")))
+     ;; (package-initialize)
    #+end_src
 
    {{{index(updating packages)}}}
