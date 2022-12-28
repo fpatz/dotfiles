@@ -35,7 +35,11 @@ setup_pyenv () {
 setup_dotfiles () {
     clone_if_not_there $DOTFILES_REPO $DOTFILES_LOCATION
     echo "==> stowing dotfiles"
-    stow -v --no-folding bash git emacs spin
+    rm ~/.bashrc ~/.profile ~/.bash_logout
+    (
+        cd $DOTFILES_LOCATION;
+        stow -v --no-folding bash git emacs spin
+    )
 }
 
 
