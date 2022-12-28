@@ -50,7 +50,7 @@ bootstrap_emacs () {
         (
             set -m;
             trap '' SIGINT SIGTERM EXIT;
-            emacs --script ~/.emacs.d/init.el &;
+            emacs --script ~/.emacs.d/init.el &
             wait
         )
     done
