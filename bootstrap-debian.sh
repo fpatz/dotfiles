@@ -1,11 +1,11 @@
 # - bootstrap a Debian system
 
-PACKAGES=\
-        stow emacs git fonts-firacode cmake build-essential libtool-bin \
-        libssl-dev zlib1g-dev libbz2-dev \
-        libreadline-dev libsqlite3-dev curl libncursesw5-dev \
-        xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev \
-        liblzma-dev libsasl2-dev python3-dev libldap2-dev 
+
+PACKAGES= stow emacs git fonts-firacode cmake build-essential           \
+        libtool-bin tree rg jq libssl-dev zlib1g-dev libbz2-dev         \
+        libreadline-dev libsqlite3-dev curl libncursesw5-dev xz-utils   \
+        tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev        \
+        libsasl2-dev python3-dev libldap2-dev pax-utils
 
 sudo apt update
 sudo apt install $PACKAGES
@@ -16,7 +16,7 @@ cd ~/.pyenv && src/configure && make -C src
 cat <<EOF >> .profile
 # add .pyenv to PATH
 if [ -d "$HOME/.pyenv/bin" ] ; then
-    PATH="$HOME/.pyenv/bin:$PATH"
+    PATH="$HOME/.pyenv/bin:$PATH"t
     eval "$(pyenv init -)"
 fi
 EOF

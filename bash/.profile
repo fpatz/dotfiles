@@ -31,3 +31,6 @@ if [ -d "$HOME/.pyenv/bin" ] ; then
     PATH="$HOME/.pyenv/bin:$PATH"
     eval "$(pyenv init -)"
 fi
+
+# Created by `pipx` on 2022-12-23 16:13:11
+export PATH="$PATH:/home/frank/.local/bin"
