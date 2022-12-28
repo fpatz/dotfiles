@@ -16,6 +16,7 @@
 
 (setq gc-cons-threshold most-positive-fixnum
       gc-cons-percentage 0.9)
+(straight-use-package 'org)
 (org-babel-load-file "~/.emacs.d/emacs.org")
 (setq gc-cons-threshold 16777216
       gc-cons-percentage 0.1)
