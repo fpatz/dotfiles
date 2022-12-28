@@ -27,7 +27,8 @@ setup_pyenv () {
     # add .pyenv to PATH
     PATH="$HOME/.pyenv/bin:$PATH"
     eval "$(pyenv init -)"
-    pyenv install $PYENV_GLOBAL
+    echo "==> Python $PYENV_GLOBAL"
+    pyenv install -s $PYENV_GLOBAL
     pyenv global $PYENV_GLOBAL
 }
 
