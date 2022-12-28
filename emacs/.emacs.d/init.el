@@ -1,5 +1,5 @@
 ;; This is init.el, and it is generated from emacs.org!
-
+(setq package-enable-at-startup nil)
 ;; Install straight.el
 (defvar bootstrap-version)
 (let ((bootstrap-file

@@ -11,17 +11,18 @@
              (time-subtract after-init-time before-init-time)))
     gcs-done)))
 
-(require 'package)
-(setq package-archives
-      '(("melpa" . "http://melpa.org/packages/")
-        ("gnu" . "https://elpa.gnu.org/packages/")))
-(package-initialize)
+;; (require 'package)
+;; (setq package-archives
+;;       '(("melpa" . "http://melpa.org/packages/")
+;;         ("gnu" . "https://elpa.gnu.org/packages/")))
+;; (package-initialize)
 
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
-(require 'use-package)
-(setq use-package-compute-statistics t)
+;; Install use-package
+(straight-use-package 'use-package)
+
+;; Configure use-package to use straight.el by default
+(use-package straight
+  :custom (straight-use-package-by-default t))
 
 (defmacro with-system (type &rest body)
   "Evaluate BODY if `system-type' equals TYPE."
@@ -52,7 +53,7 @@
 
 (with-system darwin
   (setq exec-path-from-shell-arguments nil)
-  (use-package exec-path-from-shell :ensure t)
+  (use-package exec-path-from-shell :straight t)
   (exec-path-from-shell-initialize)
   (setenv "LANG" "en_US.UTF-8")
   (setq mac-option-modifier 'meta)
@@ -91,15 +92,15 @@
 (setq desktop-restore-frames nil)
 (desktop-save-mode 1)
 
-;(use-package powerline :ensure t)
-;(use-package spaceline :ensure t)
+;(use-package powerline :straight t)
+;(use-package spaceline :straight t)
 ;(require 'spaceline-config)
 ;(spaceline-emacs-theme)
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
-(use-package olivetti :ensure t)
-(use-package hide-mode-line :ensure t)
+(use-package olivetti :straight t)
+(use-package hide-mode-line :straight t)
 
 (defun fp/focus-mode ()
   "Enter focused writing mode"
@@ -117,9 +118,9 @@
 
 (global-set-key (kbd "C-x s") 'save-buffer)
 
-(use-package ivy :ensure t)
+(use-package ivy :straight t)
 
-;;(use-package org-plus-contrib :ensure t)
+;;(use-package org-plus-contrib :straight t)
 
 (setq org-directory "~/Dropbox/org")
 
@@ -159,7 +160,7 @@
 (setq org-refile-use-outline-path 'file)
 
 (use-package deft
-  :ensure t
+  :straight t
   :bind ("<f9>" . deft)
   :config
   (setq
@@ -172,7 +173,7 @@
    deft-org-mode-title-prefix t))
 
 (use-package org-bullets
-   :ensure t
+   :straight t
    :init
    (setq org-bullets-bullet-list
          '("\u25C9" "\u25CE" "\u26AB" "\u25CB" "\u25BA" "\u25C7"))
@@ -273,9 +274,9 @@
       (make-directory pub-dir))))
 
 (use-package tex
-  :ensure auctex)
+  :straight auctex)
 (use-package cdlatex
-  :ensure t)
+  :straight t)
 (add-hook 'org-mode-hook 'turn-on-org-cdlatex)
 
 (require 'org)
@@ -328,7 +329,7 @@
 (setq org-latex-minted-options
       '(("breaklines" "true") ("breakafter" "/") ("bgcolor" "sourcebg")))
 
-(use-package ob-mermaid :ensure t)
+(use-package ob-mermaid :straight t)
 (org-babel-do-load-languages
  'org-babel-load-languages
  '(
@@ -341,7 +342,7 @@
       (setq ob-mermaid-cli-path mmdc-binary)
     (message "Mermaid CLI mmdc not found")))
 (setq org-plantuml-exec-mode 'plantuml)
-(use-package plantuml-mode :ensure t)
+(use-package plantuml-mode :straight t)
 (setq plantuml-default-exec-mode 'executable)
 (setq plantuml-indent-level 2)
 ;;(require 'ox-extra)
@@ -780,7 +781,7 @@
  my-bib-file (concat my-bibliography-dir "cslab.bib"))
 
 (use-package org-ref
-  :ensure t
+  :straight t
   :config
   (setq
    reftex-default-bibliography (list my-bib-file)
@@ -832,10 +833,10 @@
 (global-set-key (kbd "C-c o f") 'ivy-org-fts-find-org-file)
 
 (use-package yaml-mode
-  :ensure t)
+  :straight t)
 
 (use-package pdf-tools
-  :ensure t
+  :straight t
   :magic ("%PDF" . pdf-view-mode)
   :config
   (pdf-tools-install :no-query)
@@ -856,15 +857,15 @@
   (add-hook hook (lambda () (flyspell-mode -1))))
 
 (use-package guess-language
-  :ensure t)
+  :straight t)
 
-(use-package rg :ensure t)
+(use-package rg :straight t)
 
-(use-package projectile :ensure t)
+(use-package projectile :straight t)
 (projectile-global-mode)
 (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
 
-(use-package dsvn :ensure t)
+(use-package dsvn :straight t)
 
 (setq compilation-scroll-output t)
 
@@ -885,7 +886,7 @@
 (add-hook 'org-mode-hook (lambda () (setq indent-tabs-mode nil)))
 
 (use-package blacken
-  :ensure t
+  :straight t
   :custom
   ;; set this to nil to let black pick up whatever the project
   ;; has configured
@@ -893,27 +894,27 @@
 (global-set-key (kbd "C-c b") 'blacken-buffer)
 
 (use-package pyvenv
-  :ensure t)
+  :straight t)
 
 (use-package elpy
-  :ensure t
+  :straight t
   :custom
   (elpy-formatter "black")
   :init
   (elpy-enable))
 
 (use-package ein
-  :ensure t
+  :straight t
   :custom
   (ein:output-area-inlined-images t)
   :custom-face
   (ein:cell-output-area  ((t (:background "light grey")))))
 
 (use-package magit
-  :ensure t
+  :straight t
   :bind (("C-c s" . magit-status)))
 (use-package forge :after magit
-  :ensure t
+  :straight t
   :config
   (push '("de-git01.contact.de" "de-git01.contact.de/api/v4"
           "de-git01.contact.de" forge-gitlab-repository)
@@ -923,10 +924,10 @@
 (global-set-key (kbd "C-c n") 'next-error)
 
 (use-package rjsx-mode
-  :ensure t)
+  :straight t)
 
 (use-package go-mode
-  :ensure t)
+  :straight t)
 
 (when (require 'mu4e nil 'noerror)
   (require 'mu4e)
@@ -1053,7 +1054,7 @@
 
 (require 'org-protocol)
 (use-package org-capture-pop-frame
-  :ensure t
+  :straight t
   :config
   (setq
    ocpf-frame-parameters
@@ -1077,6 +1078,6 @@
 (setq rg-executable-path "rg")
 
 (use-package vterm
-  :ensure t
+  :straight t
   :custom
   (vterm-shell (concat (locate-file "bash" exec-path exec-suffixes 1) " -i")))
