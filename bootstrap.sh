@@ -39,7 +39,7 @@ setup_dotfiles () {
     rm ~/.bashrc ~/.profile ~/.bash_logout
     (
         cd $DOTFILES_LOCATION;
-        stow -v --no-folding bash git emacs spin
+        stow -vv --no-folding bash git emacs spin
     )
 }
 
