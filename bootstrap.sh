@@ -45,7 +45,7 @@ if type apt > /dev/null; then
     sudo apt update
     echo "==> installing packages ..."
     sudo apt install -y \
-         stow emacs git fonts-firacode tree rg jq \
+         stow emacs git fonts-firacode tree ripgrep jq \
          pax-utils \
          cmake build-essential libtool-bin libssl-dev \
          zlib1g-dev libbz2-dev libreadline-dev \
