@@ -44,6 +44,19 @@ setup_dotfiles () {
 }
 
 
+bootstrap_emacs () {
+    echo "==> bootstrapping Emacs configuration"
+    (
+        set -m;
+        trap '' SIGINT SIGTERM EXIT;
+        for attempt in 1 2 3; do
+            emacs --script ~/.emacs.d/init.el &;
+            wait
+        done
+    )
+}
+
+
 if type apt > /dev/null; then
     echo "==> this is a Debian-like system that has 'apt'"
     echo "==> updating the package database ..."
@@ -64,5 +77,4 @@ setup_dotfiles
 
 setup_pyenv
 
-echo "==> bootstrapping Emacs configuration"
-emacs --script .emacs.d/init.el 
+bootstrap_emacs
