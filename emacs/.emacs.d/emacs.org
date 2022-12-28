@@ -15,11 +15,12 @@
 
   #+begin_dropcap
   My Emacs setup lives in ~~/.emacs.d/emacs.org~ as a /literate
-  program/ cite:knuth1984literate, that is in an Org Mode
-  cite:orgmode text document with embedded [[https://www.gnu.org/software/emacs/manual/elisp.html][Emacs Lisp]] (and other) code
-  snippets. What you're reading here is produced from that
-  document. The process of extracting code from a literate program is
-  called "tangling".
+  program/ cite:knuth1984literate, that is in an Org Mode cite:orgmode
+  text document with embedded
+  [[https://www.gnu.org/software/emacs/manual/elisp.html][Emacs Lisp]]
+  (and other) code snippets. What you're reading here is produced from
+  that document. The process of extracting code from a literate
+  program is called "tangling".
   #+end_dropcap
 
   {{{index(tangling)}}}
@@ -80,7 +81,7 @@
    {{{tag(init.el)}}}
    #+begin_src emacs-lisp :tangle init.el
      ;; This is init.el, and it is generated from emacs.org!
-     (setq package-enable-at-startup nil) 
+     (setq package-enable-at-startup nil)
      ;; Install straight.el
      (defvar bootstrap-version)
      (let ((bootstrap-file
@@ -97,6 +98,7 @@
 
      (setq gc-cons-threshold most-positive-fixnum
            gc-cons-percentage 0.9)
+     (straight-use-package 'org)
      (org-babel-load-file "~/.emacs.d/emacs.org")
      (setq gc-cons-threshold 16777216
            gc-cons-percentage 0.1)
@@ -106,6 +108,13 @@
    ;; Disable package.el in favor of straight.el
    (setq package-enable-at-startup nil)
    #+end_src
+
+   We have to this early.
+
+   #+begin_src emacs-lisp
+     (setq vc-handled-backends nil)
+   #+end_src
+
 
 
 ** Measuring startup time
@@ -132,34 +141,6 @@
          gcs-done)))
    #+end_src
 
-
-** Initialize ~package.el~
-
-   {{{package(package)}}}
-   {{{index(package.el@\texttt{package.el})}}}
-   {{{index(package management)}}}
-   {{{index(MELPA)}}}
-
-   ~package.el~ is the package management system built into
-   Emacs. There are also alternatives, though, e.g. [[https://github.com/quelpa/quelpa][Quelpa]] or
-   [[https://github.com/raxod502/straight.el][straight.el]]. For me, ~package.el~ is all I need. Packages come from
-   package repositories. Vanilla Emacs ships with just
-   ~elpa.gnu.org~. I add the [[https://melpa.org/][MELPA package repository]], that has most
-   interesting Emacs packages with their latest versions. Also add the
-   [[http://orgmode.org/elpa][Org repository]] to get an up-to-date Org distribution.
-
-   #+begin_src emacs-lisp
-     ;; (require 'package)
-     ;; (setq package-archives
-     ;;       '(("melpa" . "http://melpa.org/packages/")
-     ;;         ("gnu" . "https://elpa.gnu.org/packages/")))
-     ;; (package-initialize)
-   #+end_src
-
-   {{{index(updating packages)}}}
-
-   I do package updates manually.
-
 ** Bootstrapping ~use-package~
 
    {{{package(use-package)}}}
@@ -174,10 +155,6 @@
    #+begin_src emacs-lisp
      ;; Install use-package
      (straight-use-package 'use-package)
-
-     ;; Configure use-package to use straight.el by default
-     (use-package straight
-       :custom (straight-use-package-by-default t))
    #+end_src
 
 ** ~with-system~ for platform-dependent code
@@ -280,7 +257,7 @@
    #+begin_src emacs-lisp
      (setq create-lockfiles nil)
    #+end_src
-  
+
 
 * Settings for macOS
 
@@ -504,20 +481,15 @@
      (global-set-key (kbd "C-x s") 'save-buffer)
    #+end_src
 
-
 * Ivy
 
-#+begin_src emacs-lisp
-(use-package ivy :straight t)
-#+end_src
+  #+begin_src emacs-lisp
+    (use-package ivy :straight t
+      :config
+      (ivy-mode 1))
+  #+end_src
 
 * Org Mode
-
-  {{{package(org-plus-contrib)}}}
-
-  #+begin_src emacs-lisp
-  ;;(use-package org-plus-contrib :straight t)
-  #+end_src
 
   Org Mode cite:orgmode is what I use most for taking notes and
   minutes or writing essays. My ~.org~ files simply go into a Dropbox
@@ -1061,14 +1033,14 @@
       (org-babel-do-load-languages
        'org-babel-load-languages
        '(
-	 (latex . t)
-	 (mermaid .t)
-	 (plantuml . t)))
+         (latex . t)
+         (mermaid .t)
+         (plantuml . t)))
       (let
-	  ((mmdc-binary (locate-file "mmdc" exec-path exec-suffixes 1)))
-	(if mmdc-binary
-	    (setq ob-mermaid-cli-path mmdc-binary)
-	  (message "Mermaid CLI mmdc not found")))
+          ((mmdc-binary (locate-file "mmdc" exec-path exec-suffixes 1)))
+        (if mmdc-binary
+            (setq ob-mermaid-cli-path mmdc-binary)
+          (message "Mermaid CLI mmdc not found")))
       (setq org-plantuml-exec-mode 'plantuml)
       (use-package plantuml-mode :straight t)
       (setq plantuml-default-exec-mode 'executable)
@@ -1754,40 +1726,26 @@ ripgrep
 
    {{{package(pyvenv)}}}
 
-#+begin_src emacs-lisp
-  (use-package pyvenv
-    :straight t)
-#+end_src
+   #+begin_src emacs-lisp
+     (use-package pyvenv
+       :straight t)
+   #+end_src
 
    {{{package(elpy)}}}
-#+begin_src emacs-lisp
-  (use-package elpy
-    :straight t
-    :custom
-    (elpy-formatter "black")
-    :init
-    (elpy-enable))
-#+end_src
-
-*** Jupyter
-
-    {{{index(Jupyter)}}}
-    {{{package(ein)}}}
-
-    #+begin_src emacs-lisp
-      (use-package ein
-        :straight t
-        :custom
-        (ein:output-area-inlined-images t)
-        :custom-face
-        (ein:cell-output-area  ((t (:background "light grey")))))
-    #+end_src
+   #+begin_src emacs-lisp
+     (use-package elpy
+       :straight t
+       :custom
+       (elpy-formatter "black")
+       :init
+       (elpy-enable))
+   #+end_src
 
 ** Additional Keyboard Shortcuts
 
    {{{package(magit)}}}
    {{{package(forge)}}}
- #+begin_src emacs-lisp
+   #+begin_src emacs-lisp
    (use-package magit
      :straight t
      :bind (("C-c s" . magit-status)))
@@ -1797,16 +1755,17 @@ ripgrep
      (push '("de-git01.contact.de" "de-git01.contact.de/api/v4"
              "de-git01.contact.de" forge-gitlab-repository)
            forge-alist))
- #+end_src
+   #+end_src
 
- {{{binding(C-c m,compile)}}}
- {{{binding(C-c n,next-error)}}}
- {{{binding(C-c s,magit-status)}}}
+   {{{binding(C-c m,compile)}}}
+   {{{binding(C-c n,next-error)}}}
+   {{{binding(C-c s,magit-status)}}}
 
- #+begin_src emacs-lisp
- (global-set-key (kbd "C-c m") 'compile)
- (global-set-key (kbd "C-c n") 'next-error)
- #+end_src
+   #+begin_src emacs-lisp
+   (global-set-key (kbd "C-c m") 'compile)
+   (global-set-key (kbd "C-c n") 'next-error)
+   #+end_src
+
 ** Javascript
 
    {{{package(rjsx-mode)}}}
@@ -1857,7 +1816,7 @@ This is the configuration for the "mbsync" command
 (http://isync.sourceforge.net), that synchronizes IMAP accounts with
 local Maildir folders, on which I run mu4e as a MUA.
 
-#+begin_src sh
+#+begin_src sh :tangle ~/.mbsyncrc
 # -*- sh -*- (seems ok for this kind of file)
 
 # AUTOMATICALLY GENERATED FROM ~/.emacs.d/emacs.org
