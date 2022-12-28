@@ -308,7 +308,7 @@
   {{{tag(«mac-specific-code»)}}}
   #+begin_src emacs-lisp :tangle no :noweb-ref mac-specific-code
     (setq exec-path-from-shell-arguments nil)
-    (use-package exec-path-from-shell)
+    (use-package exec-path-from-shell :straigt t)
     (exec-path-from-shell-initialize)
     (setenv "LANG" "en_US.UTF-8")
   #+end_src
@@ -435,8 +435,8 @@
   {{{package(spaceline-config)}}}
 
   #+begin_src emacs-lisp
-    ;(use-package powerline)
-    ;(use-package spaceline)
+    ;(use-package powerline :straigt t)
+    ;(use-package spaceline :straigt t)
     ;(require 'spaceline-config)
     ;(spaceline-emacs-theme)
   #+end_src
@@ -460,8 +460,8 @@
    {{{package(hide-mode-line)}}}
 
    #+begin_src emacs-lisp
-     (use-package olivetti)
-     (use-package hide-mode-line)
+     (use-package olivetti :straigt t)
+     (use-package hide-mode-line :straigt t)
    #+end_src
 
    My custom focus mode combines the ~olivetti~ and ~hide-mode-line~
@@ -502,7 +502,7 @@
 * Ivy
 
 #+begin_src emacs-lisp
-(use-package ivy)
+(use-package ivy :straigt t)
 #+end_src
 
 * Org Mode
@@ -510,7 +510,7 @@
   {{{package(org-plus-contrib)}}}
 
   #+begin_src emacs-lisp
-  ;;(use-package org-plus-contrib)
+  ;;(use-package org-plus-contrib :straigt t)
   #+end_src
 
   Org Mode cite:orgmode is what I use most for taking notes and
@@ -631,7 +631,7 @@
 
    #+begin_src emacs-lisp
      (use-package deft
-      
+       :straigt t
        :bind ("<f9>" . deft)
        :config
        (setq
@@ -652,7 +652,7 @@
 
    #+begin_src emacs-lisp
      (use-package org-bullets
-       
+        :straigt t
         :init
         (setq org-bullets-bullet-list
               '("\u25C9" "\u25CE" "\u26AB" "\u25CB" "\u25BA" "\u25C7"))
@@ -933,9 +933,9 @@
     {{{package(cdlatex)}}}
     #+begin_src emacs-lisp
       (use-package tex
-        :ensure auctex)
+        :straigt auctex)
       (use-package cdlatex
-       )
+        :straigt t)
       (add-hook 'org-mode-hook 'turn-on-org-cdlatex)
     #+end_src
 
@@ -1051,7 +1051,7 @@
 
     {{{package(ox-extra)}}}
     #+begin_src emacs-lisp
-      (use-package ob-mermaid)
+      (use-package ob-mermaid :straigt t)
       (org-babel-do-load-languages
        'org-babel-load-languages
        '(
@@ -1064,7 +1064,7 @@
 	    (setq ob-mermaid-cli-path mmdc-binary)
 	  (message "Mermaid CLI mmdc not found")))
       (setq org-plantuml-exec-mode 'plantuml)
-      (use-package plantuml-mode)
+      (use-package plantuml-mode :straigt t)
       (setq plantuml-default-exec-mode 'executable)
       (setq plantuml-indent-level 2)
       ;;(require 'ox-extra)
@@ -1507,7 +1507,7 @@
       my-bib-file (concat my-bibliography-dir "cslab.bib"))
 
      (use-package org-ref
-      
+       :straigt t
        :config
        (setq
         reftex-default-bibliography (list my-bib-file)
@@ -1563,7 +1563,7 @@
 
    # #+begin_src emacs-lisp
    #   (use-package org-roam
-   #    
+   #     :straigt t
    #     :hook
    #     (after-init . org-roam-mode)
    #     :custom
@@ -1577,7 +1577,7 @@
    #                 (("C-c n i" . org-roam-insert))))
 
    #   (use-package org-roam-bibtex
-   #    
+   #     :straigt t
    #     :hook (org-roam-mode . org-roam-bibtex-mode)
    #     :bind (:map org-mode-map
    #            (("C-c n a" . orb-note-actions))))
@@ -1627,14 +1627,14 @@
 
   #+begin_src emacs-lisp
     (use-package yaml-mode
-     )
+      :straigt t)
   #+end_src
 
   PDF tools.
 
   #+begin_src emacs-lisp
     (use-package pdf-tools
-     
+      :straigt t
       :magic ("%PDF" . pdf-view-mode)
       :config
       (pdf-tools-install :no-query)
@@ -1666,7 +1666,7 @@
   {{{package(guess-language)}}}
   #+begin_src emacs-lisp
     (use-package guess-language
-     )
+      :straigt t)
   #+end_src
 
 * Programming
@@ -1676,7 +1676,7 @@ ripgrep
 {{{package(rg)}}}
 
 #+begin_src emacs-lisp
-(use-package rg)
+(use-package rg :straigt t)
 #+end_src
 
 
@@ -1687,7 +1687,7 @@ ripgrep
     {{{package(projectile)}}}
 
   #+begin_src emacs-lisp
-    (use-package projectile)
+    (use-package projectile :straigt t)
     (projectile-global-mode)
     (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   #+end_src
@@ -1698,7 +1698,7 @@ ripgrep
     {{{package(dsvn)}}}
 
  #+begin_src emacs-lisp
- (use-package dsvn)
+ (use-package dsvn :straigt t)
  #+end_src
 
 ** Compilation Buffer
@@ -1738,7 +1738,7 @@ ripgrep
    {{{package(blacken)}}}
    #+begin_src emacs-lisp
      (use-package blacken
-      
+       :straigt t
        :custom
        ;; set this to nil to let black pick up whatever the project
        ;; has configured
@@ -1750,13 +1750,13 @@ ripgrep
 
 #+begin_src emacs-lisp
   (use-package pyvenv
-   )
+    :straigt t)
 #+end_src
 
    {{{package(elpy)}}}
 #+begin_src emacs-lisp
   (use-package elpy
-   
+    :straigt t
     :custom
     (elpy-formatter "black")
     :init
@@ -1770,7 +1770,7 @@ ripgrep
 
     #+begin_src emacs-lisp
       (use-package ein
-       
+        :straigt t
         :custom
         (ein:output-area-inlined-images t)
         :custom-face
@@ -1783,10 +1783,10 @@ ripgrep
    {{{package(forge)}}}
  #+begin_src emacs-lisp
    (use-package magit
-    
+     :straigt t
      :bind (("C-c s" . magit-status)))
    (use-package forge :after magit
-    
+     :straigt t
      :config
      (push '("de-git01.contact.de" "de-git01.contact.de/api/v4"
              "de-git01.contact.de" forge-gitlab-repository)
@@ -1806,14 +1806,14 @@ ripgrep
    {{{package(rjsx-mode)}}}
 #+begin_src emacs-lisp
   (use-package rjsx-mode
-   )
+    :straigt t)
 #+end_src
 
 ** Go
 
    #+begin_src emacs-lisp
      (use-package go-mode
-      )
+       :straigt t)
    #+end_src
 
 * Mail
@@ -2109,7 +2109,7 @@ mode
 #+begin_src emacs-lisp
   (require 'org-protocol)
   (use-package org-capture-pop-frame
-   
+    :straigt t
     :config
     (setq
      ocpf-frame-parameters
@@ -2146,7 +2146,7 @@ The "rg" thing below is a workaround for a shortcoming in rg.el (AFAIUI).
 
 #+begin_src emacs-lisp
   (use-package vterm
-   
+    :straigt t
     :custom
     (vterm-shell (concat (locate-file "bash" exec-path exec-suffixes 1) " -i")))
 #+end_src
