@@ -46,14 +46,7 @@ setup_dotfiles () {
 
 bootstrap_emacs () {
     echo "==> bootstrapping Emacs configuration"
-    for attempt in 1 2 3; do
-        (
-            set -m;
-            trap '' SIGINT SIGTERM EXIT;
-            emacs --script ~/.emacs.d/init.el &
-            wait
-        )
-    done
+    emacs --script ~/.emacs.d/init.el
 }
 
 
