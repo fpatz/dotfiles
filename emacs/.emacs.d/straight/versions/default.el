@@ -31,6 +31,7 @@
  ("helm-bibtex" . "8ebf50d5bd368082d0b7ab79d26a52f372cdef98")
  ("ht.el" . "e83fdb8bc0a3cc8cd2687a947e2610b20b68b7d3")
  ("hydra" . "317e1de33086637579a7aeb60f77ed0405bf359b")
+ ("info-plus" . "649997b6392ca2f3abd0bcd9f6e99508054b13d6")
  ("js2-mode" . "a297ec2c2d9aa50ddc6c06959bb5a054e17b692a")
  ("let-alist" . "021fc10df2e44faba4728d849ee767cf890aa51a")
  ("magit" . "45be64e5f1ef0d03156c53543eb198829177a934")
