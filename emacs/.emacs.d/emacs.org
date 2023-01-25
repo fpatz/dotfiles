@@ -394,6 +394,18 @@
       (set-frame-parameter nil 'fullscreen 'fullscreen))
   #+end_src
 
+** Improved Info
+
+   The {{{package(info+)}}} package improves Emacs Info by adding command and
+   fontification.
+
+   #+begin_src emacs-lisp
+     (straight-use-package 'info+)
+     (require 'info+)
+   #+end_src
+
+** Other
+
   No message in the ~*scratch*~ buffer.
 
   #+begin_src emacs-lisp
