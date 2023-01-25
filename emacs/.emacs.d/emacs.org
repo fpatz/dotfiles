@@ -412,7 +412,7 @@
   (setq initial-scratch-message nil)
   #+end_src
 
-  This enables shift-select.
+  This enables [[help:org-support-shift-select][shift-select]].
 
   #+begin_src emacs-lisp
     (setq org-support-shift-select t)
