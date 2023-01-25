@@ -496,7 +496,7 @@
              (olivetti-mode 1)
              (hide-mode-line-mode 1)
              (olivetti-set-width 85)))))
-     (global-set-key (kbd "s-o") 'fp/focus-mode)
+     (global-set-key (kbd "C-c o") 'fp/focus-mode)
    #+end_src
 
 ** A fix for wonky fingers
