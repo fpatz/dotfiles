@@ -1010,6 +1010,15 @@
            (make-directory pub-dir))))
    #+end_src
 
+*** Pandoc
+
+    Provide additional export formats via [[https://pandoc.org/][pandoc]].
+
+    #+begin_src emacs-lisp
+      (use-package ox-pandoc :straight t)
+    #+end_src
+
+
 *** \LaTeX export
 
     The following enables ~cdlatex~ abbreviations in Org documents.
@@ -2238,7 +2247,6 @@ The "rg" thing below is a workaround for a shortcoming in rg.el (AFAIUI).
 
     https://askubuntu.com/questions/646631/emacs-doesnot-work-with-xdg-open
 
-*** TODO Add ox-pandoc
 *** TODO Add binding for activating org-ref-helm-insert-cite-link to rst-mode
 *** TODO Mention view-mode
 *** TODO Explore one of the git-gutter modes
