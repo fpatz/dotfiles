@@ -97,21 +97,36 @@
            (eval-print-last-sexp)))
        (load bootstrap-file nil 'nomessage))
 
+     ;; Initialize Emacs by loading the literate Lisp in emacs.org -- we
+     ;; want a fresh 'org for that, so we'll make sure, 'straight has it
+     ;; loaded. During initialization, inhibit garbage collection.
+
      (setq gc-cons-threshold most-positive-fixnum
            gc-cons-percentage 0.9)
+
      (straight-use-package 'org)
-     (org-babel-load-file "~/.emacs.d/emacs.org")
+     (require 'org)
+
+     (let ((previous-vc-follow vc-follow-symlinks))
+       (progn
+         (setq vc-follow-symlinks nil)
+         (org-babel-load-file "~/.emacs.d/emacs.org")
+         (setq vc-follow-symlinks previous-vc-follow)))
+
      (setq gc-cons-threshold 16777216
            gc-cons-percentage 0.1)
    #+end_src
 
+   {{{tag(early-init.el)}}}
    #+begin_src emacs-lisp :tangle early-init.el
-   ;; Disable package.el in favor of straight.el
-   (setq package-enable-at-startup nil)
+     ;; Disable package.el in favor of straight.el
+     (setq package-enable-at-startup nil)
+     (message "I am early init!")
    #+end_src
 
-   We have to this early.
+   We have to do this early.
 
+   [[help:vc-handled-backends]]
    #+begin_src emacs-lisp
      (setq vc-handled-backends nil)
    #+end_src
