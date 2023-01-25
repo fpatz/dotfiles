@@ -36,7 +36,7 @@
  '(ido-indicator ((((class color) (min-colors 89)) (:foreground "#f36c60" :background "#20252a"))))
  '(ido-virtual ((((class color) (min-colors 89)) (:foreground "#b0bec5"))))
  '(cursor ((((class color) (min-colors 89)) (:background "#ff9800"))))
- '(fringe ((((class color) (min-colors 89)) (:background "#2a2f33"))))
+ '(fringe ((((class color) (min-colors 89)) (:background "#20252a"))))
  '(border ((((class color) (min-colors 89)) (:background "#37474f"))))
  '(vertical-border ((((class color) (min-colors 89)) (:background "#555555" :foreground "#555555"))))
  '(highlight ((((class color) (min-colors 89)) (:inverse-video nil :background "#37474f"))))
