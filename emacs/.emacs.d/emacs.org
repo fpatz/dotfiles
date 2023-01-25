@@ -449,10 +449,10 @@
   {{{package(spaceline-config)}}}
 
   #+begin_src emacs-lisp
-    ;(use-package powerline :straight t)
-    ;(use-package spaceline :straight t)
-    ;(require 'spaceline-config)
-    ;(spaceline-emacs-theme)
+    (use-package powerline :straight t)
+    (use-package spaceline :straight t)
+    (require 'spaceline-config)
+    (spaceline-emacs-theme)
   #+end_src
 
   Use ~ibuffer~.
