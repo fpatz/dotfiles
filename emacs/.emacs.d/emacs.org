@@ -512,12 +512,81 @@
      (global-set-key (kbd "C-x s") 'save-buffer)
    #+end_src
 
-* Ivy
+* Minibuffer
+
+  {{{package(vertico)}}}
+  Use ~vertico~ for minibuffer completion. Also install all the
+  extension files. We use ~vertico-directory-delete-char~ to enable
+  quick directory-up like in ~ivy~.
 
   #+begin_src emacs-lisp
-    (use-package ivy :straight t
-      :config
-      (ivy-mode 1))
+    (use-package vertico
+      :straight (vertico :files (:defaults "extensions/*")
+                         :includes (vertico-indexed
+                                    vertico-flat
+                                    vertico-grid
+                                    vertico-mouse
+                                    vertico-quick
+                                    vertico-buffer
+                                    vertico-repeat
+                                    vertico-reverse
+                                    vertico-directory
+                                    vertico-multiform
+                                    vertico-unobtrusive
+                                    ))
+      :bind (:map vertico-map
+           ("DEL" . vertico-directory-delete-char)))
+    (vertico-mode)
+  #+end_src
+
+  {{{package(orderless)}}}
+  Use ~orderless~ completion styles.
+
+  #+begin_src emacs-lisp
+    (use-package orderless
+      :straight t
+      :custom
+      (completion-styles '(orderless))      ; Use orderless
+      (orderless-matching-styles
+       '(orderless-literal
+         orderless-prefixes
+         orderless-initialism
+         orderless-regexp
+         orderless-flex                       ; Basically fuzzy finding
+         ;; orderless-strict-leading-initialism
+         ;; orderless-strict-initialism
+         ;; orderless-strict-full-initialism
+         ;; orderless-without-literal          ; Recommended for dispatches instead
+         )))
+  #+end_src
+
+  {{{package(embark)}}}
+  #+begin_src emacs-lisp
+    (use-package embark
+      :straight t
+      :bind
+      (("s-e" . embark-act)))
+  #+end_src
+
+  {{{package(marginalia)}}}
+  #+begin_src emacs-lisp
+  (use-package marginalia
+    :straight t
+    :config
+    (marginalia-mode))
+  #+end_src
+
+  These don't really belong here ...
+  {{{package(consult)}}}
+  {{{package(which-key)}}}
+
+  #+begin_src emacs-lisp
+    (use-package consult :straight t)
+    (use-package embark-consult :straight t)
+  #+end_src
+
+  #+begin_src emacs-lisp
+    (use-package which-key :straight t :config (which-key-mode))
   #+end_src
 
 * Org Mode
