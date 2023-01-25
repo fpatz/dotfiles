@@ -1,8 +1,9 @@
 #+title: A Literate Emacs Setup
 #+author: Frank Patz-Brockmann, {{{email}}}
-#+email: fp@contact.de
-#+date: December 2020
+#+email: fpatz@acm.org
+#+date: Updated January 2023
 #+language: en
+#+options: toc:3
 
 # -- Setting up Org Babel to suppress results from source blocks. This
 # -- is useful to avoid polluting this document with #+RESULT blocks
@@ -14,27 +15,27 @@
   {{{index(literate programming)}}}
 
   #+begin_dropcap
-  My Emacs setup lives in ~~/.emacs.d/emacs.org~ as a /literate
-  program/ cite:knuth1984literate, that is in an Org Mode cite:orgmode
-  text document with embedded
-  [[https://www.gnu.org/software/emacs/manual/elisp.html][Emacs Lisp]]
-  (and other) code snippets. What you're reading here is produced from
-  that document. The process of extracting code from a literate
-  program is called "tangling".
+  My Emacs setup lives in ~.emacs.d/emacs.org~ as a /literate program/
+  cite:knuth1984literate, that is in an Org Mode cite:orgmode text
+  document with embedded [[https://www.gnu.org/software/emacs/manual/elisp.html][Emacs Lisp]] (and other) code snippets. What
+  you're reading here is produced from that document. The process of
+  extracting code from a literate program is called "tangling".
   #+end_dropcap
 
   {{{index(tangling)}}}
 
-  In this document, code that is part of the Emacs initialization is
-  typeset like this:
+  In this document, code that is part of the Emacs configuration is
+  typeset like this -- the following also is the first line of the
+  initialization (see [[info:Elisp#Using Lexical Binding][Elisp, lexical binding]]).
 
-  #+begin_src emacs-lisp :tangle no
-    (do-some-thing)
+  #+begin_src emacs-lisp
+    ;; -*- lexical-binding: t; -*-
+    ;; This is emacs.el and it is generated from emacs.org.
   #+end_src
 
   Source code that is /not/ part of the initialization but gets
-  tangled into another file or is a noweb reference definition has a
-  distinct background and a little annotation on top of it:
+  tangled into another file or is a [[info:org#Noweb Reference Syntax][noweb]] definition has a
+  little annotation on top of it:
 
   {{{tag(annotation)}}}
   #+attr_html: :class tagged
@@ -44,26 +45,26 @@
 
   {{{index(Git repository)}}}
 
-  The Emacs configuration files in ~~/.emacs.d~ are under version
+  The Emacs configuration files in ~.emacs.d~ are under version
   control in a Git repository
   (https://git.contact.de/frank/dotemacs). That repository is meant to
   provide a reproducible Emacs setup: on a new machine, I can clone
-  the repository into ~~/.emacs.d/~. When Emacs is started for the
+  the repository into ~.emacs.d/~. When Emacs is started for the
   first time, all required packages will be installed automatically.
 
 * Initialization
+
 ** ~init.el~
 
    {{{index(init.el@\texttt{init.el})}}}
    {{{index(initialization file)}}}
 
    When Emacs is started, it loads a lisp program from an
-   [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html][/initialization file/ ]][[citep:EmacsManual27.1][484]].  That program
-   is meant to initialize Emacs in the way you want it, i.e. load
-   extensions, set custom options etc. I prefer to have all things
-   related to Emacs in one folder, ~~/.emacs.d/~, and use ~init.el~ in
-   that folder as my initialization file (there are other options,
-   though).
+   [[info:emacs#Init File][initialization file]]. That program is meant
+   to initialize Emacs in the way you want it, i.e. load extensions, set
+   custom options etc. I prefer to have all things related to Emacs in
+   one folder, ~.emacs.d/~, and use ~init.el~ in that folder as my
+   initialization file (there are other options, though).
 
    Emacs cannot run the literate program in ~emacs.org~
    directly. Instead, ~init.el~ is generated from a special section in
@@ -77,11 +78,11 @@
    startup time a bit.
 
    # When changing the code in this source block, don't forget to
-   # update ~/.emacs.d/init.el by tangling it (C-c C-v C-t)!
+   # update ~.emacs.d/init.el by tangling it (C-c C-v C-t)!
    {{{tag(init.el)}}}
    #+begin_src emacs-lisp :tangle init.el
      ;; This is init.el, and it is generated from emacs.org!
-     (setq package-enable-at-startup nil)
+
      ;; Install straight.el
      (defvar bootstrap-version)
      (let ((bootstrap-file
@@ -193,7 +194,7 @@
    Emacs has a built-in customization system: built-in and installable
    packages declare customizable properties, which users can
    manipulate via ~M-x customize~. The resulting custom settings are
-   persisted into a file in ~~/.emacs.d/~ and automatically reloaded
+   persisted into a file in ~.emacs.d/~ and automatically reloaded
    on startup. It is not a good idea to keep the custom file under
    version control, though, especially for a "roaming" configuration
    that is used on different machines and platforms.
@@ -1784,7 +1785,7 @@ ripgrep
 * Mail
 
 I (sometimes) read email inside Emacs using ~mu4e~. IMAP accounts are
-completely replicated to local storage (~~/Maildir~) by ~isync~, and
+completely replicated to local storage (~Maildir~) by ~isync~, and
 then indexed by ~mu~.
 
 ** Installing mu
@@ -2116,7 +2117,7 @@ The "rg" thing below is a workaround for a shortcoming in rg.el (AFAIUI).
     (vterm-shell (concat (locate-file "bash" exec-path exec-suffixes 1) " -i")))
 #+end_src
 
-* Appendices                                                         :ignore:
+* Appendices
 
 #+latex: \printbibliography[heading=bibintoc]
 #+latex: \printindex
