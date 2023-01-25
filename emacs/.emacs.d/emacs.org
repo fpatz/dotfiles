@@ -724,6 +724,13 @@
 
 ** Org User Interface
 
+   Customize [[help:org-goto]] to use the completion interface:
+
+   #+begin_src emacs-lisp
+     (setq org-goto-interface 'outline-path-completion)
+     (setq org-outline-path-complete-in-steps nil)
+   #+end_src
+
    {{{package(org-bullets)}}}
 
    ~org-bullets~ creates pretty headlines.
