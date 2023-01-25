@@ -1106,6 +1106,8 @@
                  ("xelatex -no-pdf -interaction nonstopmode -output-directory %o %f")
                  :image-converter
                  ("dvisvgm %f -n -b min -c %S -o %O")))
+      ;; LaTeX previews tend to be too small on 4k displays, scale up by factor 3
+      (plist-put org-format-latex-options :scale 3.0)
     #+end_src
 
     I use a custom document class ~fpbarticle~ as the default for \LaTeX
