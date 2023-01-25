@@ -137,13 +137,12 @@
 
    {{{index(startup hook)}}}
 
-   The following code adds a function to ~emacs-startup-hook~ that
+   The following code adds a function to [[help:emacs-startup-hook]] that
    reports how much time was spent in Emacs initialization. Optimizing
    startup time seems to be a popular ambition among Emacsers. I don't
    care much, though, as I tend to run very long-lived Emacs sessions.
 
    #+begin_src emacs-lisp
-     ;; -*- lexical-binding: t; -*-
      ;; Use a hook, so the message doesn't get clobbered by
      ;; other messages.
      (add-hook
@@ -195,7 +194,7 @@
 
    {{{index(load-path@\texttt{load-path})}}}
 
-   I keep some home-grown lisp files in ~~/.emacs.d/lisp~, so add this
+   I keep some home-grown lisp files in ~.emacs.d/lisp~, so add this
    path to ~load-path~:
 
    #+begin_src emacs-lisp
