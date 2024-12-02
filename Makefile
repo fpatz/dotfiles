@@ -1,7 +1,7 @@
 .PHONY: install tree
 
 install:
-	stow -vv --no-folding bash git emacs spin
+	stow -v -R --no-folding bash git emacs spin tex
 
 tree:
 	tree -R -a -I .git .
