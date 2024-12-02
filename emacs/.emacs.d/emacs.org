@@ -1703,19 +1703,6 @@
           (browse-url goto-url))))
    #+end_src
 
-** Search with ~org-fts~
-
-   An experimental search solution from https://github.com/zot/microfts
-
-   #+begin_src emacs-lisp
-     (require 'ivy-org-fts)
-     (setq org-fts-input-args '())
-     (define-prefix-command 'ctrl-c-o-map)
-     (global-set-key (kbd "C-c o") 'ctrl-c-o-map)
-     (global-set-key (kbd "C-c o s") 'ivy-org-fts-search)
-     (global-set-key (kbd "C-c o f") 'ivy-org-fts-find-org-file)
-   #+end_src
-
 
 * Other Markup formats
 
