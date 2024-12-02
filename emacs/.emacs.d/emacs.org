@@ -597,7 +597,7 @@
   computers and my smartphone.
 
   #+begin_src emacs-lisp
-    (setq org-directory "~/Dropbox/org")
+    (setq org-directory "~/org")
   #+end_src
 
   The Org files for filing to-do items and journal entry also are in
