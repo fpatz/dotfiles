@@ -39,7 +39,7 @@ setup_dotfiles () {
     rm ~/.bashrc ~/.profile ~/.bash_logout
     (
         cd $DOTFILES_LOCATION;
-        stow -vv --no-folding bash git emacs spin
+        stow -v --no-folding bash git emacs spin
     )
 }
 
@@ -49,21 +49,37 @@ bootstrap_emacs () {
     emacs --script ~/.emacs.d/init.el
 }
 
+setup_latex () {
+}
+
 
 if type apt > /dev/null; then
     echo "==> this is a Debian-like system that has 'apt'"
     echo "==> updating the package database ..."
+    sudo tee /etc/apt/sources.list.d/non-free.list > /dev/null <<EOF
+# Add non-free
+deb http://deb.debian.org/debian/ bullseye non-free
+deb-src http://deb.debian.org/debian/ bullseye non-free
+deb http://security.debian.org/debian-security bullseye-security non-free
+deb-src http://security.debian.org/debian-security bullseye-security non-free
+deb http://deb.debian.org/debian/ bullseye-updates non-free
+deb-src http://deb.debian.org/debian/ bullseye-updates non-free
+EOF
     sudo apt update
-    echo "==> installing packages ..."
+    echo "==> installing dev packages ..."
     sudo apt install -y \
-         stow emacs git fonts-firacode tree ripgrep jq \
-         pax-utils \
+         stow emacs emacs-common-non-dfsg \
+         git fonts-firacode tree ripgrep jq \
+         pax-utils pandoc \
          cmake build-essential libtool-bin libssl-dev \
          zlib1g-dev libbz2-dev libreadline-dev \
          libsqlite3-dev curl libncursesw5-dev xz-utils \
          tk-dev libxml2-dev libxmlsec1-dev libffi-dev \
          liblzma-dev libsasl2-dev python3-dev \
          libldap2-dev
+
+    echo "==> installing TeX ..."
+    sudo apt install -y texlive-full
 fi
 
 setup_dotfiles
