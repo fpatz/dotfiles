@@ -1,0 +1,6 @@
+# Un-ignore these hidden directories to stop tools like ripgrep from
+# ignoring them (in this project).
+
+!.emacs.d
+!.config
+/emacs/.emacs.d/#emacs.org#
