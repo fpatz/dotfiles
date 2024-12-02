@@ -121,7 +121,6 @@
    #+begin_src emacs-lisp :tangle early-init.el
      ;; Disable package.el in favor of straight.el
      (setq package-enable-at-startup nil)
-     (message "I am early init!")
    #+end_src
 
    We have to do this early.
