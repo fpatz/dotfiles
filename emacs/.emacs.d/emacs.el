@@ -1,6 +1,8 @@
+;; -*- lexical-binding: t; -*-
+;; This is emacs.el and it is generated from emacs.org.
+
 (setq vc-handled-backends nil)
 
-;; -*- lexical-binding: t; -*-
 ;; Use a hook, so the message doesn't get clobbered by
 ;; other messages.
 (add-hook
@@ -71,6 +73,9 @@
   (menu-bar-mode 0)
   (set-frame-parameter nil 'fullscreen 'fullscreen))
 
+(straight-use-package 'info+)
+(require 'info+)
+
 (setq initial-scratch-message nil)
 
 (setq org-support-shift-select t)
@@ -84,10 +89,10 @@
 (setq desktop-restore-frames nil)
 (desktop-save-mode 1)
 
-;(use-package powerline :straight t)
-;(use-package spaceline :straight t)
-;(require 'spaceline-config)
-;(spaceline-emacs-theme)
+(use-package powerline :straight t)
+(use-package spaceline :straight t)
+(require 'spaceline-config)
+(spaceline-emacs-theme)
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
@@ -106,15 +111,60 @@
         (olivetti-mode 1)
         (hide-mode-line-mode 1)
         (olivetti-set-width 85)))))
-(global-set-key (kbd "s-o") 'fp/focus-mode)
+(global-set-key (kbd "s-f") 'fp/focus-mode)
 
 (global-set-key (kbd "C-x s") 'save-buffer)
 
-(use-package ivy :straight t
-  :config
-  (ivy-mode 1))
+(use-package vertico
+  :straight (vertico :files (:defaults "extensions/*")
+                     :includes (vertico-indexed
+                                vertico-flat
+                                vertico-grid
+                                vertico-mouse
+                                vertico-quick
+                                vertico-buffer
+                                vertico-repeat
+                                vertico-reverse
+                                vertico-directory
+                                vertico-multiform
+                                vertico-unobtrusive
+                                ))
+  :bind (:map vertico-map
+       ("DEL" . vertico-directory-delete-char)))
+(vertico-mode)
 
-(setq org-directory "~/Dropbox/org")
+(use-package orderless
+  :straight t
+  :custom
+  (completion-styles '(orderless))      ; Use orderless
+  (orderless-matching-styles
+   '(orderless-literal
+     orderless-prefixes
+     orderless-initialism
+     orderless-regexp
+     orderless-flex                       ; Basically fuzzy finding
+     ;; orderless-strict-leading-initialism
+     ;; orderless-strict-initialism
+     ;; orderless-strict-full-initialism
+     ;; orderless-without-literal          ; Recommended for dispatches instead
+     )))
+
+(use-package embark
+  :straight t
+  :bind
+  (("s-e" . embark-act)))
+
+(use-package marginalia
+  :straight t
+  :config
+  (marginalia-mode))
+
+(use-package consult :straight t)
+(use-package embark-consult :straight t)
+
+(use-package which-key :straight t :config (which-key-mode))
+
+(setq org-directory "~/org")
 
 (setq org-default-notes-file (concat org-directory "/todo.org"))
 (setq org-default-journal-file (concat org-directory "/journal.org"))
@@ -163,6 +213,9 @@
    ;; The following convienently makes Deft aware
    ;; of #+title lines in Org files
    deft-org-mode-title-prefix t))
+
+(setq org-goto-interface 'outline-path-completion)
+(setq org-outline-path-complete-in-steps nil)
 
 (use-package org-bullets
    :straight t
@@ -265,6 +318,8 @@
     (when (not (file-directory-p pub-dir))
       (make-directory pub-dir))))
 
+(use-package ox-pandoc :straight t)
+
 (use-package tex
   :straight auctex)
 (use-package cdlatex
@@ -299,6 +354,8 @@
            ("xelatex -no-pdf -interaction nonstopmode -output-directory %o %f")
            :image-converter
            ("dvisvgm %f -n -b min -c %S -o %O")))
+;; LaTeX previews tend to be too small on 4k displays, scale up by factor 3
+(plist-put org-format-latex-options :scale 3.0)
 
 (add-to-list
  'org-latex-classes
@@ -816,13 +873,6 @@
        ((goto-url (format "message:%s" url)))
      (message "%s" goto-url)
      (browse-url goto-url))))
-
-(require 'ivy-org-fts)
-(setq org-fts-input-args '())
-(define-prefix-command 'ctrl-c-o-map)
-(global-set-key (kbd "C-c o") 'ctrl-c-o-map)
-(global-set-key (kbd "C-c o s") 'ivy-org-fts-search)
-(global-set-key (kbd "C-c o f") 'ivy-org-fts-find-org-file)
 
 (use-package yaml-mode
   :straight t)

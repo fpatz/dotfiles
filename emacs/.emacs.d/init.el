@@ -1,5 +1,5 @@
 ;; This is init.el, and it is generated from emacs.org!
-(setq package-enable-at-startup nil)
+
 ;; Install straight.el
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -14,9 +14,21 @@
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
+;; Initialize Emacs by loading the literate Lisp in emacs.org -- we
+;; want a fresh 'org for that, so we'll make sure, 'straight has it
+;; loaded. During initialization, inhibit garbage collection.
+
 (setq gc-cons-threshold most-positive-fixnum
       gc-cons-percentage 0.9)
+
 (straight-use-package 'org)
-(org-babel-load-file "~/.emacs.d/emacs.org")
+(require 'org)
+
+(let ((previous-vc-follow vc-follow-symlinks))
+  (progn
+    (setq vc-follow-symlinks nil)
+    (org-babel-load-file "~/.emacs.d/emacs.org")
+    (setq vc-follow-symlinks previous-vc-follow)))
+
 (setq gc-cons-threshold 16777216
       gc-cons-percentage 0.1)
