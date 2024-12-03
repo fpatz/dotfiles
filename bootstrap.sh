@@ -49,10 +49,6 @@ bootstrap_emacs () {
     emacs --script ~/.emacs.d/init.el
 }
 
-setup_latex () {
-}
-
-
 if type apt > /dev/null; then
     echo "==> this is a Debian-like system that has 'apt'"
     echo "==> updating the package database ..."
